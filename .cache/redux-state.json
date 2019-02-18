@@ -658,16 +658,16 @@
         "owner": "internal-data-bridge"
       }
     },
-    "997137b2-ed35-5e49-a53c-b9e0fc4ce2ca": {
+    "c2040e70-8f97-50eb-ad76-6c2b82b1cfc4": {
       "resolve": "/Users/derek/portfolio/node_modules/gatsby-plugin-manifest",
-      "id": "997137b2-ed35-5e49-a53c-b9e0fc4ce2ca",
+      "id": "c2040e70-8f97-50eb-ad76-6c2b82b1cfc4",
       "name": "gatsby-plugin-manifest",
       "version": "2.0.17",
       "pluginOptions": {
         "plugins": [],
         "name": "gatsby-starter-default",
         "short_name": "starter",
-        "start_url": "/",
+        "start_url": "",
         "background_color": "#3fbdff",
         "theme_color": "#3fbdff",
         "display": "minimal-ui"
@@ -740,7 +740,7 @@
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "ed69bd15687808955d2a5b51020d68f2",
+        "contentDigest": "c75a27ed3430cfc9a92d3abb0904ea18",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
@@ -829,7 +829,7 @@
       "resolve": "/Users/derek/portfolio",
       "id": "7374ebf2-d961-52ee-92a2-c25e7cb387a9",
       "name": "default-site-plugin",
-      "version": "5d78afcf9f1d0a9f870b7ed86c3f2458",
+      "version": "2d0a9aa82ce99fc70dac938d933f8868",
       "pluginOptions": {
         "plugins": []
       },
@@ -941,7 +941,7 @@
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "0c50ef3570eb998aee0b684fc0433549",
+        "contentDigest": "37f9fd46ed3769d27b50b0796dc18159",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
@@ -1056,12 +1056,12 @@
       "host": "localhost",
       "pathPrefix": "",
       "polyfill": true,
-      "buildTime": "2019-02-18T23:40:18.347Z",
+      "buildTime": "2019-02-18T23:57:21.031Z",
       "id": "Site",
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "758b2a8a4f17bef6f33358d738bc1200",
+        "contentDigest": "6aa227345c7ac5c0e763e4f891d36adf",
         "type": "Site",
         "owner": "internal-data-bridge"
       }
@@ -1071,7 +1071,7 @@
       "children": [],
       "parent": null,
       "internal": {
-        "contentDigest": "110af81fc2eae43f885d59d27fecdc17",
+        "contentDigest": "fac643f070be71ce5659fc2852004be7",
         "type": "Directory",
         "description": "Directory \"src/images\"",
         "owner": "gatsby-source-filesystem"
@@ -1082,10 +1082,10 @@
       "extension": "",
       "size": 96,
       "prettySize": "96 B",
-      "modifiedTime": "2019-02-18T23:23:54.070Z",
-      "accessTime": "2019-02-18T23:40:20.415Z",
-      "changeTime": "2019-02-18T23:23:54.070Z",
-      "birthTime": "2018-12-17T22:31:58.533Z",
+      "modifiedTime": "2019-02-18T23:49:02.067Z",
+      "accessTime": "2019-02-18T23:57:22.887Z",
+      "changeTime": "2019-02-18T23:49:02.067Z",
+      "birthTime": "2019-02-18T23:49:02.067Z",
       "root": "/",
       "dir": "/Users/derek/portfolio/src",
       "base": "images",
@@ -1099,16 +1099,16 @@
       "gid": 20,
       "rdev": 0,
       "blksize": 4096,
-      "ino": 6499944,
+      "ino": 13711854,
       "blocks": 0,
-      "atimeMs": 1550533220415.4172,
-      "mtimeMs": 1550532234070.3567,
-      "ctimeMs": 1550532234070.3567,
-      "birthtimeMs": 1545085918533.2058,
-      "atime": "2019-02-18T23:40:20.415Z",
-      "mtime": "2019-02-18T23:23:54.070Z",
-      "ctime": "2019-02-18T23:23:54.070Z",
-      "birthtime": "2018-12-17T22:31:58.533Z"
+      "atimeMs": 1550534242887.348,
+      "mtimeMs": 1550533742066.9902,
+      "ctimeMs": 1550533742066.9902,
+      "birthtimeMs": 1550533742066.9397,
+      "atime": "2019-02-18T23:57:22.887Z",
+      "mtime": "2019-02-18T23:49:02.067Z",
+      "ctime": "2019-02-18T23:49:02.067Z",
+      "birthtime": "2019-02-18T23:49:02.067Z"
     },
     "522a5711-66a9-55f0-84fc-1dbc6e2febf7": {
       "id": "522a5711-66a9-55f0-84fc-1dbc6e2febf7",
@@ -1129,10 +1129,10 @@
       "extension": "jpg",
       "size": 769428,
       "prettySize": "769 kB",
-      "modifiedTime": "2019-02-18T21:30:05.269Z",
-      "accessTime": "2019-02-18T23:38:47.003Z",
-      "changeTime": "2019-02-18T21:30:25.443Z",
-      "birthTime": "2019-02-18T21:30:05.067Z",
+      "modifiedTime": "2019-02-18T23:49:02.070Z",
+      "accessTime": "2019-02-18T23:53:48.271Z",
+      "changeTime": "2019-02-18T23:49:02.070Z",
+      "birthTime": "2019-02-18T23:49:02.067Z",
       "root": "/",
       "dir": "/Users/derek/portfolio/src/images",
       "base": "avatar.jpg",
@@ -1146,16 +1146,16 @@
       "gid": 20,
       "rdev": 0,
       "blksize": 4096,
-      "ino": 13610433,
+      "ino": 13711855,
       "blocks": 1504,
-      "atimeMs": 1550533127002.6416,
-      "mtimeMs": 1550525405269.366,
-      "ctimeMs": 1550525425442.741,
-      "birthtimeMs": 1550525405067.2651,
-      "atime": "2019-02-18T23:38:47.003Z",
-      "mtime": "2019-02-18T21:30:05.269Z",
-      "ctime": "2019-02-18T21:30:25.443Z",
-      "birthtime": "2019-02-18T21:30:05.067Z"
+      "atimeMs": 1550534028271.2634,
+      "mtimeMs": 1550533742070.4746,
+      "ctimeMs": 1550533742070.4746,
+      "birthtimeMs": 1550533742066.9863,
+      "atime": "2019-02-18T23:53:48.271Z",
+      "mtime": "2019-02-18T23:49:02.070Z",
+      "ctime": "2019-02-18T23:49:02.070Z",
+      "birthtime": "2019-02-18T23:49:02.067Z"
     },
     "faff04e3-3ce2-5d76-9476-5b34fa8f0e6a": {
       "id": "faff04e3-3ce2-5d76-9476-5b34fa8f0e6a",
@@ -1250,7 +1250,7 @@
   },
   "status": {
     "plugins": {},
-    "PLUGINS_HASH": "82501637ab9787de5f925fe9707bab74"
+    "PLUGINS_HASH": "90e0d494c882a2697a18c69fec113b36"
   },
   "componentDataDependencies": {
     "nodes": {},
@@ -1279,6 +1279,10 @@
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/about.js"
     },
+    "/Users/derek/portfolio/src/pages/App.js": {
+      "query": "",
+      "componentPath": "/Users/derek/portfolio/src/pages/App.js"
+    },
     "/Users/derek/portfolio/src/pages/blog.js": {
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/blog.js"
@@ -1286,10 +1290,6 @@
     "/Users/derek/portfolio/src/pages/skills.js": {
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/skills.js"
-    },
-    "/Users/derek/portfolio/src/pages/App.js": {
-      "query": "",
-      "componentPath": "/Users/derek/portfolio/src/pages/App.js"
     }
   },
   "staticQueryComponents": {}
