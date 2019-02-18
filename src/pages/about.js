@@ -22,8 +22,8 @@ export default class About extends Component {
                         <a href="https://twitter.com/ProdigyNelson/timelines/677195667207491584"> most popular tweets </a>
                     </h3>
                     <h3>
-                        I blog: so far I've only written 
-                        <a href="https://medium.com/@derek_nelson/the-story-of-a-startup-pt-1-inception-launch-82ed678cdb87" > pt. 1 of the story of metoo, </a>
+                        I blog: so far I've only written {}
+                        <a href="https://medium.com/@derek_nelson/the-story-of-a-startup-pt-1-inception-launch-82ed678cdb87" >pt. 1 of the story of metoo, </a>
                         but there's more coming soon :)
                     </h3>
                 </div>

@@ -1,13 +1,22 @@
 {
   "nodes": {
     "SitePage /dev-404-page/": {
+      "jsonName": "dev-404-page-5f9",
+      "internalComponentName": "ComponentDev404Page",
       "path": "/dev-404-page/",
+      "component": "/Users/derek/portfolio/.cache/dev-404-page.js",
+      "componentChunkName": "component---cache-dev-404-page-js",
+      "context": {},
+      "pluginCreator___NODE": "d48d1c52-fe48-53cb-8f08-aa4b47dde5a5",
+      "pluginCreatorId": "d48d1c52-fe48-53cb-8f08-aa4b47dde5a5",
+      "componentPath": "/Users/derek/portfolio/.cache/dev-404-page.js",
       "id": "SitePage /dev-404-page/",
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "type": "SitePage",
-        "contentDigest": "f91d29e10ba680b413138cf9ed86e655",
+        "contentDigest": "9c6cf09ac1550a30c7af82f0cd067a11",
+        "description": "d48d1c52-fe48-53cb-8f08-aa4b47dde5a5",
         "owner": "internal-data-bridge"
       }
     },
@@ -38,7 +47,7 @@
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "contentDigest": "7782fe8fed48fc5253280b91b6a77cc0",
@@ -73,7 +82,7 @@
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "contentDigest": "069a08c923f2ae390a5e5f38397731d2",
@@ -109,7 +118,7 @@
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "contentDigest": "9ad5ca0170aa7243d925e1c956a2d77b",
@@ -144,7 +153,7 @@
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "contentDigest": "bffd15a4237cb614a1a5b4c24c0eea22",
@@ -179,7 +188,7 @@
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "contentDigest": "4f40d6a96c3d8e2b424f2e0b9eb5cc54",
@@ -214,7 +223,7 @@
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "contentDigest": "52ec28c9cbaf0cda013162ddafd3d3b3",
@@ -226,7 +235,7 @@
       "resolve": "/Users/derek/portfolio/node_modules/gatsby-plugin-react-helmet",
       "id": "1943ff2f-9c0c-558d-8d0c-006603e8106a",
       "name": "gatsby-plugin-react-helmet",
-      "version": "3.0.4",
+      "version": "3.0.6",
       "pluginOptions": {
         "plugins": []
       },
@@ -239,7 +248,7 @@
       "packageJson": {
         "name": "gatsby-plugin-react-helmet",
         "description": "Manage document head data with react-helmet. Provides drop-in server rendering support for Gatsby.",
-        "version": "3.0.4",
+        "version": "3.0.6",
         "main": "index.js",
         "keywords": [
           "gatsby",
@@ -286,20 +295,20 @@
         "peerDependencies": [
           {
             "name": "gatsby",
-            "version": ">2.0.0-alpha"
+            "version": "^2.0.0"
           },
           {
             "name": "react-helmet",
-            "version": ">=5.1.3"
+            "version": "^5.1.3"
           }
         ],
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "4f97edb72e1db87590b81b9c780328d3",
+        "contentDigest": "44a01385d5c512819abcafb7ca0616d4",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
@@ -308,7 +317,7 @@
       "resolve": "/Users/derek/portfolio/node_modules/gatsby-source-filesystem",
       "id": "652c0c68-afc3-5c2c-bb1c-7dcb9ee8324c",
       "name": "gatsby-source-filesystem",
-      "version": "2.0.12",
+      "version": "2.0.20",
       "pluginOptions": {
         "plugins": [],
         "name": "images",
@@ -324,7 +333,7 @@
       "packageJson": {
         "name": "gatsby-source-filesystem",
         "description": "Gatsby plugin which parses files within a directory for further parsing by other plugins",
-        "version": "2.0.12",
+        "version": "2.0.20",
         "keywords": [
           "gatsby",
           "gatsby-plugin"
@@ -373,6 +382,10 @@
             "version": "^4.0.2"
           },
           {
+            "name": "progress",
+            "version": "^1.1.8"
+          },
+          {
             "name": "read-chunk",
             "version": "^3.0.0"
           },
@@ -410,16 +423,16 @@
         "peerDependencies": [
           {
             "name": "gatsby",
-            "version": ">2.0.0-alpha"
+            "version": "^2.0.0"
           }
         ],
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "99e3ae9e3c1915829a1c8dfbddb47acb",
+        "contentDigest": "512bad9b1f36bfdef4e05f3d0173a844",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
@@ -428,7 +441,7 @@
       "resolve": "/Users/derek/portfolio/node_modules/gatsby-transformer-sharp",
       "id": "da3d06eb-685e-5c77-ae1d-750eb6a2e4a9",
       "name": "gatsby-transformer-sharp",
-      "version": "2.1.9",
+      "version": "2.1.13",
       "pluginOptions": {
         "plugins": []
       },
@@ -443,7 +456,7 @@
       "packageJson": {
         "name": "gatsby-transformer-sharp",
         "description": "Gatsby transformer plugin for images using Sharp",
-        "version": "2.1.9",
+        "version": "2.1.13",
         "keywords": [
           "gatsby",
           "gatsby-plugin",
@@ -475,7 +488,7 @@
           },
           {
             "name": "sharp",
-            "version": "^0.21.0"
+            "version": "^0.21.3"
           }
         ],
         "devDependencies": [
@@ -509,10 +522,10 @@
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "d455e90286c41e9fae0723f0dc5aa0ad",
+        "contentDigest": "db881d791fd664e1fbb17e76abb971ed",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
@@ -521,7 +534,7 @@
       "resolve": "/Users/derek/portfolio/node_modules/gatsby-plugin-sharp",
       "id": "84d6154d-4241-556c-a679-cc8339cac100",
       "name": "gatsby-plugin-sharp",
-      "version": "2.0.15",
+      "version": "2.0.20",
       "pluginOptions": {
         "plugins": []
       },
@@ -534,7 +547,7 @@
       "packageJson": {
         "name": "gatsby-plugin-sharp",
         "description": "Wrapper of the Sharp image manipulation library for Gatsby plugins",
-        "version": "2.0.15",
+        "version": "2.0.20",
         "main": "index.js",
         "keywords": [
           "gatsby",
@@ -571,7 +584,7 @@
           },
           {
             "name": "imagemin-mozjpeg",
-            "version": "^7.0.0"
+            "version": "^8.0.0"
           },
           {
             "name": "imagemin-pngquant",
@@ -579,7 +592,7 @@
           },
           {
             "name": "imagemin-webp",
-            "version": "^4.1.0"
+            "version": "^5.0.0"
           },
           {
             "name": "lodash",
@@ -603,7 +616,7 @@
           },
           {
             "name": "sharp",
-            "version": "^0.21.0"
+            "version": "^0.21.3"
           },
           {
             "name": "svgo",
@@ -631,25 +644,25 @@
         "peerDependencies": [
           {
             "name": "gatsby",
-            "version": ">2.0.0-alpha"
+            "version": "^2.0.0"
           }
         ],
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "b2784dd0fb72b65d1339b9123e16102d",
+        "contentDigest": "606461eed60a0d130b5d19158b11395e",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
     },
-    "1d9477ca-253f-5e99-9dd6-3aa62a0fd57b": {
+    "997137b2-ed35-5e49-a53c-b9e0fc4ce2ca": {
       "resolve": "/Users/derek/portfolio/node_modules/gatsby-plugin-manifest",
-      "id": "1d9477ca-253f-5e99-9dd6-3aa62a0fd57b",
+      "id": "997137b2-ed35-5e49-a53c-b9e0fc4ce2ca",
       "name": "gatsby-plugin-manifest",
-      "version": "2.0.12",
+      "version": "2.0.17",
       "pluginOptions": {
         "plugins": [],
         "name": "gatsby-starter-default",
@@ -657,8 +670,7 @@
         "start_url": "/",
         "background_color": "#3fbdff",
         "theme_color": "#3fbdff",
-        "display": "minimal-ui",
-        "icon": "src/images/gatsby-icon.png"
+        "display": "minimal-ui"
       },
       "nodeAPIs": [
         "onPostBootstrap"
@@ -671,7 +683,7 @@
       "packageJson": {
         "name": "gatsby-plugin-manifest",
         "description": "Gatsby plugin which adds a manifest.webmanifest to make sites progressive web apps",
-        "version": "2.0.12",
+        "version": "2.0.17",
         "main": "index.js",
         "keywords": [
           "gatsby",
@@ -695,7 +707,7 @@
           },
           {
             "name": "sharp",
-            "version": "^0.21.0"
+            "version": "^0.21.3"
           }
         ],
         "devDependencies": [
@@ -719,16 +731,16 @@
         "peerDependencies": [
           {
             "name": "gatsby",
-            "version": ">2.0.0-alpha"
+            "version": "^2.0.0"
           }
         ],
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "7412324e1bd260ad8ed719cd06edde23",
+        "contentDigest": "ed69bd15687808955d2a5b51020d68f2",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
@@ -805,7 +817,7 @@
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "contentDigest": "d18c5b89ae4a2927ad1c5ba803f1ec96",
@@ -817,7 +829,7 @@
       "resolve": "/Users/derek/portfolio",
       "id": "7374ebf2-d961-52ee-92a2-c25e7cb387a9",
       "name": "default-site-plugin",
-      "version": "5446b4dbcaee0330f4cbfca3223cd340",
+      "version": "5d78afcf9f1d0a9f870b7ed86c3f2458",
       "pluginOptions": {
         "plugins": []
       },
@@ -926,10 +938,10 @@
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "1c9eca6ba9dcdf79d8336e3ab6627a35",
+        "contentDigest": "0c50ef3570eb998aee0b684fc0433549",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
@@ -938,7 +950,7 @@
       "resolve": "/Users/derek/portfolio/node_modules/gatsby-plugin-page-creator",
       "id": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
       "name": "gatsby-plugin-page-creator",
-      "version": "2.0.5",
+      "version": "2.0.6",
       "pluginOptions": {
         "plugins": [],
         "path": "/Users/derek/portfolio/src/pages",
@@ -953,7 +965,7 @@
       "packageJson": {
         "name": "gatsby-plugin-page-creator",
         "description": "Gatsby plugin that automatically creates pages from React components in specified directories",
-        "version": "2.0.5",
+        "version": "2.0.6",
         "main": "index.js",
         "keywords": [
           "gatsby",
@@ -1020,16 +1032,16 @@
         "peerDependencies": [
           {
             "name": "gatsby",
-            "version": ">2.0.0-alpha"
+            "version": "^2.0.0"
           }
         ],
         "optionalDependecies": [],
         "bundledDependecies": []
       },
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "12e8e4756d4a7fa45a2db3de6bf9212d",
+        "contentDigest": "fccf93d9dd3ff8e8cf407d9b71edd9c6",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
@@ -1040,14 +1052,16 @@
         "description": "About me & stuff.",
         "author": "@dereknelson"
       },
+      "port": "8000",
+      "host": "localhost",
       "pathPrefix": "",
       "polyfill": true,
-      "buildTime": "2019-02-18T23:23:03.496Z",
+      "buildTime": "2019-02-18T23:40:18.347Z",
       "id": "Site",
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "f8b2731829f45314152f5c0335bd0bd2",
+        "contentDigest": "758b2a8a4f17bef6f33358d738bc1200",
         "type": "Site",
         "owner": "internal-data-bridge"
       }
@@ -1055,9 +1069,9 @@
     "31882c76-aa35-51f8-8f32-77815c8ab7dd": {
       "id": "31882c76-aa35-51f8-8f32-77815c8ab7dd",
       "children": [],
-      "parent": "___SOURCE___",
+      "parent": null,
       "internal": {
-        "contentDigest": "c302bec426d734c2e4e967ad9b2ee35d",
+        "contentDigest": "110af81fc2eae43f885d59d27fecdc17",
         "type": "Directory",
         "description": "Directory \"src/images\"",
         "owner": "gatsby-source-filesystem"
@@ -1066,11 +1080,11 @@
       "absolutePath": "/Users/derek/portfolio/src/images",
       "relativePath": "",
       "extension": "",
-      "size": 160,
-      "prettySize": "160 B",
-      "modifiedTime": "2019-02-18T21:30:25.352Z",
-      "accessTime": "2019-02-18T23:23:05.133Z",
-      "changeTime": "2019-02-18T21:30:25.352Z",
+      "size": 96,
+      "prettySize": "96 B",
+      "modifiedTime": "2019-02-18T23:23:54.070Z",
+      "accessTime": "2019-02-18T23:40:20.415Z",
+      "changeTime": "2019-02-18T23:23:54.070Z",
       "birthTime": "2018-12-17T22:31:58.533Z",
       "root": "/",
       "dir": "/Users/derek/portfolio/src",
@@ -1080,142 +1094,28 @@
       "relativeDirectory": "..",
       "dev": 16777221,
       "mode": 16877,
-      "nlink": 5,
+      "nlink": 3,
       "uid": 501,
       "gid": 20,
       "rdev": 0,
       "blksize": 4096,
       "ino": 6499944,
       "blocks": 0,
-      "atimeMs": 1550532185133.4958,
-      "mtimeMs": 1550525425351.7693,
-      "ctimeMs": 1550525425351.7693,
+      "atimeMs": 1550533220415.4172,
+      "mtimeMs": 1550532234070.3567,
+      "ctimeMs": 1550532234070.3567,
       "birthtimeMs": 1545085918533.2058,
-      "atime": "2019-02-18T23:23:05.133Z",
-      "mtime": "2019-02-18T21:30:25.352Z",
-      "ctime": "2019-02-18T21:30:25.352Z",
+      "atime": "2019-02-18T23:40:20.415Z",
+      "mtime": "2019-02-18T23:23:54.070Z",
+      "ctime": "2019-02-18T23:23:54.070Z",
       "birthtime": "2018-12-17T22:31:58.533Z"
-    },
-    "108b18c7-4049-56a0-b423-8ca48e5cc64f": {
-      "id": "108b18c7-4049-56a0-b423-8ca48e5cc64f",
-      "children": [
-        "806f24f6-0708-5896-a030-d90dd13cbf0f"
-      ],
-      "parent": "___SOURCE___",
-      "internal": {
-        "contentDigest": "4a9773549091c227cd2eb82ccd9c5e3a",
-        "type": "File",
-        "mediaType": "image/png",
-        "description": "File \"src/images/gatsby-icon.png\"",
-        "owner": "gatsby-source-filesystem"
-      },
-      "sourceInstanceName": "images",
-      "absolutePath": "/Users/derek/portfolio/src/images/gatsby-icon.png",
-      "relativePath": "gatsby-icon.png",
-      "extension": "png",
-      "size": 21212,
-      "prettySize": "21.2 kB",
-      "modifiedTime": "2018-12-17T22:31:58.534Z",
-      "accessTime": "2019-02-18T23:22:36.964Z",
-      "changeTime": "2018-12-17T22:31:58.534Z",
-      "birthTime": "2018-12-17T22:31:58.534Z",
-      "root": "/",
-      "dir": "/Users/derek/portfolio/src/images",
-      "base": "gatsby-icon.png",
-      "ext": ".png",
-      "name": "gatsby-icon",
-      "relativeDirectory": "",
-      "dev": 16777221,
-      "mode": 33188,
-      "nlink": 1,
-      "uid": 501,
-      "gid": 20,
-      "rdev": 0,
-      "blksize": 4096,
-      "ino": 6499946,
-      "blocks": 48,
-      "atimeMs": 1550532156963.6611,
-      "mtimeMs": 1545085918534.42,
-      "ctimeMs": 1545085918534.42,
-      "birthtimeMs": 1545085918534.19,
-      "atime": "2019-02-18T23:22:36.964Z",
-      "mtime": "2018-12-17T22:31:58.534Z",
-      "ctime": "2018-12-17T22:31:58.534Z",
-      "birthtime": "2018-12-17T22:31:58.534Z"
-    },
-    "806f24f6-0708-5896-a030-d90dd13cbf0f": {
-      "id": "806f24f6-0708-5896-a030-d90dd13cbf0f",
-      "children": [],
-      "parent": "108b18c7-4049-56a0-b423-8ca48e5cc64f",
-      "internal": {
-        "contentDigest": "4a9773549091c227cd2eb82ccd9c5e3a",
-        "type": "ImageSharp",
-        "owner": "gatsby-transformer-sharp"
-      }
-    },
-    "efaa7b33-1a85-5a32-adfb-18f056c25a3e": {
-      "id": "efaa7b33-1a85-5a32-adfb-18f056c25a3e",
-      "children": [
-        "f6d33826-533e-5bcc-bc0b-e3f13c6d01e5"
-      ],
-      "parent": "___SOURCE___",
-      "internal": {
-        "contentDigest": "6d91c86c0fde632ba4cd01062fd9ccfa",
-        "type": "File",
-        "mediaType": "image/png",
-        "description": "File \"src/images/gatsby-astronaut.png\"",
-        "owner": "gatsby-source-filesystem"
-      },
-      "sourceInstanceName": "images",
-      "absolutePath": "/Users/derek/portfolio/src/images/gatsby-astronaut.png",
-      "relativePath": "gatsby-astronaut.png",
-      "extension": "png",
-      "size": 167273,
-      "prettySize": "167 kB",
-      "modifiedTime": "2018-12-17T22:31:58.534Z",
-      "accessTime": "2019-02-18T23:22:35.278Z",
-      "changeTime": "2018-12-17T22:31:58.534Z",
-      "birthTime": "2018-12-17T22:31:58.533Z",
-      "root": "/",
-      "dir": "/Users/derek/portfolio/src/images",
-      "base": "gatsby-astronaut.png",
-      "ext": ".png",
-      "name": "gatsby-astronaut",
-      "relativeDirectory": "",
-      "dev": 16777221,
-      "mode": 33188,
-      "nlink": 1,
-      "uid": 501,
-      "gid": 20,
-      "rdev": 0,
-      "blksize": 4096,
-      "ino": 6499945,
-      "blocks": 328,
-      "atimeMs": 1550532155277.573,
-      "mtimeMs": 1545085918533.975,
-      "ctimeMs": 1545085918533.975,
-      "birthtimeMs": 1545085918533.25,
-      "atime": "2019-02-18T23:22:35.278Z",
-      "mtime": "2018-12-17T22:31:58.534Z",
-      "ctime": "2018-12-17T22:31:58.534Z",
-      "birthtime": "2018-12-17T22:31:58.533Z"
-    },
-    "f6d33826-533e-5bcc-bc0b-e3f13c6d01e5": {
-      "id": "f6d33826-533e-5bcc-bc0b-e3f13c6d01e5",
-      "children": [],
-      "parent": "efaa7b33-1a85-5a32-adfb-18f056c25a3e",
-      "internal": {
-        "contentDigest": "6d91c86c0fde632ba4cd01062fd9ccfa",
-        "type": "ImageSharp",
-        "owner": "gatsby-transformer-sharp"
-      }
     },
     "522a5711-66a9-55f0-84fc-1dbc6e2febf7": {
       "id": "522a5711-66a9-55f0-84fc-1dbc6e2febf7",
       "children": [
         "faff04e3-3ce2-5d76-9476-5b34fa8f0e6a"
       ],
-      "parent": "___SOURCE___",
+      "parent": null,
       "internal": {
         "contentDigest": "2bb3f4eaeaed8d13d0ee5a289b9404d8",
         "type": "File",
@@ -1230,7 +1130,7 @@
       "size": 769428,
       "prettySize": "769 kB",
       "modifiedTime": "2019-02-18T21:30:05.269Z",
-      "accessTime": "2019-02-18T23:23:05.134Z",
+      "accessTime": "2019-02-18T23:38:47.003Z",
       "changeTime": "2019-02-18T21:30:25.443Z",
       "birthTime": "2019-02-18T21:30:05.067Z",
       "root": "/",
@@ -1248,11 +1148,11 @@
       "blksize": 4096,
       "ino": 13610433,
       "blocks": 1504,
-      "atimeMs": 1550532185133.6248,
+      "atimeMs": 1550533127002.6416,
       "mtimeMs": 1550525405269.366,
       "ctimeMs": 1550525425442.741,
       "birthtimeMs": 1550525405067.2651,
-      "atime": "2019-02-18T23:23:05.134Z",
+      "atime": "2019-02-18T23:38:47.003Z",
       "mtime": "2019-02-18T21:30:05.269Z",
       "ctime": "2019-02-18T21:30:25.443Z",
       "birthtime": "2019-02-18T21:30:05.067Z"
@@ -1267,26 +1167,6 @@
         "owner": "gatsby-transformer-sharp"
       }
     },
-    "SitePage /404/": {
-      "jsonName": "404-22d",
-      "internalComponentName": "Component404",
-      "path": "/404/",
-      "component": "/Users/derek/portfolio/src/pages/404.js",
-      "componentChunkName": "component---src-pages-404-js",
-      "context": {},
-      "pluginCreator___NODE": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
-      "pluginCreatorId": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
-      "componentPath": "/Users/derek/portfolio/src/pages/404.js",
-      "id": "SitePage /404/",
-      "parent": "SOURCE",
-      "children": [],
-      "internal": {
-        "type": "SitePage",
-        "contentDigest": "b5f9c85efc7b56dc30010fc44da8f7a5",
-        "description": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
-        "owner": "internal-data-bridge"
-      }
-    },
     "SitePage /about/": {
       "jsonName": "about-f34",
       "internalComponentName": "ComponentAbout",
@@ -1298,7 +1178,7 @@
       "pluginCreatorId": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
       "componentPath": "/Users/derek/portfolio/src/pages/about.js",
       "id": "SitePage /about/",
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "type": "SitePage",
@@ -1318,7 +1198,7 @@
       "pluginCreatorId": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
       "componentPath": "/Users/derek/portfolio/src/pages/App.js",
       "id": "SitePage /App/",
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "type": "SitePage",
@@ -1338,51 +1218,11 @@
       "pluginCreatorId": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
       "componentPath": "/Users/derek/portfolio/src/pages/blog.js",
       "id": "SitePage /blog/",
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "type": "SitePage",
         "contentDigest": "dc836f6cb1454cf6dab99005062ee309",
-        "description": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
-        "owner": "internal-data-bridge"
-      }
-    },
-    "SitePage /": {
-      "jsonName": "index",
-      "internalComponentName": "ComponentIndex",
-      "path": "/",
-      "component": "/Users/derek/portfolio/src/pages/index.js",
-      "componentChunkName": "component---src-pages-index-js",
-      "context": {},
-      "pluginCreator___NODE": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
-      "pluginCreatorId": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
-      "componentPath": "/Users/derek/portfolio/src/pages/index.js",
-      "id": "SitePage /",
-      "parent": "SOURCE",
-      "children": [],
-      "internal": {
-        "type": "SitePage",
-        "contentDigest": "9426e9f90eaf84f1aecd9cbe32717370",
-        "description": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
-        "owner": "internal-data-bridge"
-      }
-    },
-    "SitePage /page-2/": {
-      "jsonName": "page-2-fbc",
-      "internalComponentName": "ComponentPage2",
-      "path": "/page-2/",
-      "component": "/Users/derek/portfolio/src/pages/page-2.js",
-      "componentChunkName": "component---src-pages-page-2-js",
-      "context": {},
-      "pluginCreator___NODE": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
-      "pluginCreatorId": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
-      "componentPath": "/Users/derek/portfolio/src/pages/page-2.js",
-      "id": "SitePage /page-2/",
-      "parent": "SOURCE",
-      "children": [],
-      "internal": {
-        "type": "SitePage",
-        "contentDigest": "71a9d2a255476255e3cb0c33fe63a649",
         "description": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
         "owner": "internal-data-bridge"
       }
@@ -1398,7 +1238,7 @@
       "pluginCreatorId": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
       "componentPath": "/Users/derek/portfolio/src/pages/skills.js",
       "id": "SitePage /skills/",
-      "parent": "SOURCE",
+      "parent": null,
       "children": [],
       "internal": {
         "type": "SitePage",
@@ -1406,45 +1246,14 @@
         "description": "1bbd70b9-effe-518e-8f62-218b0ebb0750",
         "owner": "internal-data-bridge"
       }
-    },
-    "SitePage /404.html": {
-      "jsonName": "404-html-516",
-      "internalComponentName": "Component404Html",
-      "path": "/404.html",
-      "component": "/Users/derek/portfolio/src/pages/404.js",
-      "componentChunkName": "component---src-pages-404-js",
-      "context": {},
-      "pluginCreator___NODE": "f795702c-a3b8-5a88-88ee-5d06019d44fa",
-      "pluginCreatorId": "f795702c-a3b8-5a88-88ee-5d06019d44fa",
-      "componentPath": "/Users/derek/portfolio/src/pages/404.js",
-      "id": "SitePage /404.html",
-      "parent": "SOURCE",
-      "children": [],
-      "internal": {
-        "type": "SitePage",
-        "contentDigest": "1d1c85df83b3ed89dbe154e7ae150719",
-        "description": "f795702c-a3b8-5a88-88ee-5d06019d44fa",
-        "owner": "internal-data-bridge"
-      }
     }
   },
   "status": {
     "plugins": {},
-    "PLUGINS_HASH": "54df63a987bfe89fca6991319b551d23"
+    "PLUGINS_HASH": "82501637ab9787de5f925fe9707bab74"
   },
   "componentDataDependencies": {
-    "nodes": {
-      "Site": [
-        "sq--src-components-layout-js",
-        "sq--src-components-seo-js"
-      ],
-      "522a5711-66a9-55f0-84fc-1dbc6e2febf7": [
-        "sq--src-components-image-js"
-      ],
-      "faff04e3-3ce2-5d76-9476-5b34fa8f0e6a": [
-        "sq--src-components-image-js"
-      ]
-    },
+    "nodes": {},
     "connections": {}
   },
   "jsonDataPaths": {
@@ -1462,59 +1271,26 @@
     "blog-f7a": "32/path---blog-f-7-a-05d-NZuapzHg3X9TaN1iIixfv1W23E"
   },
   "components": {
-    "/Users/derek/portfolio/src/pages/404.js": {
+    "/Users/derek/portfolio/.cache/dev-404-page.js": {
       "query": "",
-      "componentPath": "/Users/derek/portfolio/src/pages/404.js"
+      "componentPath": "/Users/derek/portfolio/.cache/dev-404-page.js"
     },
     "/Users/derek/portfolio/src/pages/about.js": {
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/about.js"
     },
-    "/Users/derek/portfolio/src/pages/App.js": {
-      "query": "",
-      "componentPath": "/Users/derek/portfolio/src/pages/App.js"
-    },
     "/Users/derek/portfolio/src/pages/blog.js": {
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/blog.js"
     },
-    "/Users/derek/portfolio/src/pages/index.js": {
-      "query": "",
-      "componentPath": "/Users/derek/portfolio/src/pages/index.js"
-    },
-    "/Users/derek/portfolio/src/pages/page-2.js": {
-      "query": "",
-      "componentPath": "/Users/derek/portfolio/src/pages/page-2.js"
-    },
     "/Users/derek/portfolio/src/pages/skills.js": {
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/skills.js"
+    },
+    "/Users/derek/portfolio/src/pages/App.js": {
+      "query": "",
+      "componentPath": "/Users/derek/portfolio/src/pages/App.js"
     }
   },
-  "staticQueryComponents": {
-    "sq--src-components-image-js": {
-      "name": "usersDerekPortfolioSrcComponentsImageJs2427955288",
-      "componentPath": "/Users/derek/portfolio/src/components/image.js",
-      "id": "sq--src-components-image-js",
-      "jsonName": "sq--src-components-image-js",
-      "query": "query usersDerekPortfolioSrcComponentsImageJs2427955288 {\n  placeholderImage: file(relativePath: {eq: \"avatar.jpg\"}) {\n    childImageSharp {\n      fluid(maxWidth: 300) {\n        ...GatsbyImageSharpFluid\n      }\n    }\n  }\n}\n\nfragment GatsbyImageSharpFluid on ImageSharpFluid {\n  base64\n  aspectRatio\n  src\n  srcSet\n  sizes\n}\n",
-      "hash": 2427955288
-    },
-    "sq--src-components-layout-js": {
-      "name": "SiteTitleQuery",
-      "componentPath": "/Users/derek/portfolio/src/components/layout.js",
-      "id": "sq--src-components-layout-js",
-      "jsonName": "sq--src-components-layout-js",
-      "query": "query SiteTitleQuery {\n  site {\n    siteMetadata {\n      title\n    }\n  }\n}\n",
-      "hash": 755544856
-    },
-    "sq--src-components-seo-js": {
-      "name": "DefaultSEOQuery",
-      "componentPath": "/Users/derek/portfolio/src/components/seo.js",
-      "id": "sq--src-components-seo-js",
-      "jsonName": "sq--src-components-seo-js",
-      "query": "query DefaultSEOQuery {\n  site {\n    siteMetadata {\n      title\n      description\n      author\n    }\n  }\n}\n",
-      "hash": 1025518380
-    }
-  }
+  "staticQueryComponents": {}
 }
