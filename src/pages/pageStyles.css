@@ -1,0 +1,104 @@
+@font-face{
+    font-family: 'Lato';
+    font-style: normal;
+    font-weight: 400;
+    src: url("https://fonts.googleapis.com/css?family=Lato")
+}
+
+.landing-page {
+    min-height: 100vh;
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    justify-content: center;
+}
+main {
+    display: flex;
+    flex: 1 0 auto;
+    flex-direction: column;
+    justify-content: center;
+    padding: 3.25rem 1.5rem 1rem;
+    text-align: center;
+}
+img {
+    display: flex;
+    max-width: 20%;
+    border-radius: 50%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+.intro-wrapper {
+    flex: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    text-align: center;
+}
+.intro-name {
+    font-family: 'Lato', sans-serif;
+    font-size: 3rem;
+    font-weight: bold;
+    line-height: 3rem;
+    /* padding-bottom: .5rem; */
+}
+.tagline {
+    font-size: 1.375rem;
+    margin: 1.5rem 0;
+    font-weight: 300;
+    text-align: center;
+}
+.browser-notes {
+    font-size: 0.75rem;
+}
+.about-container {
+    margin-top: 5%;
+}
+.about { 
+}
+.about h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
+}
+.about h3 {
+    font-size: 1.5rem;
+    margin: 1.5rem 0;
+    font-weight: 300;
+    text-align: center;
+    max-width: 60%;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+.about h6 {
+    margin-top: 10px;
+    max-width: 80%;
+    font-size: 1.2rem;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+.skills {
+    flex-direction: row;
+    display: flex;
+    justify-content: center;
+}
+.skillsList {
+    /* display: flex; */
+    /* margin */
+    /* flex-direction: row; */
+    width: 100%;
+    justify-content: flex-start;
+    text-align: center;
+}
+.skillsList li {
+    display: flex;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+span {
+    border-width: 1px;
+    border-style: solid;
+    padding: 0.125rem 0.5rem;
+}

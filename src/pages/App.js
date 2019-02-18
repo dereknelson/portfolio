@@ -1,11 +1,10 @@
 import React, { Component } from 'react'
 // import { Link } from 'gatsby'
 import './pageStyles.css';
-import '../styles/base.scss';
-// import Layout from '../components/layout'
-// import Image from '../components/image'
-// import SEO from '../components/seo'
+import './responsive.css'
 import SocialIcons from '../components/SocialIcons/SocialIcons';
+import About from './about';
+import Skills from './skills';
 
 export default class App extends Component{ 
     render(){ 
@@ -14,14 +13,17 @@ export default class App extends Component{
                 {/* <Nav /> */}
                 <main style={{ color: 'black' }}>
                     <div className="intro-wrapper">
+                        <img src={require('../images/avatar.jpg')}/>
                         <div className="intro-name">Hi! I'm Derek.</div>
-                        <div className="tagline">
-                            Entrepreneur | Full Stack Dev | Blogger
-                        </div>
+                        <div className="tagline">Entrepreneur | Full Stack Dev | Writer</div>
                         <SocialIcons />
+                        <About/>
+                        <Skills/>
                     </div>
                 </main>
+                {/* <ScrollToNext pageSelector=".about-page" /> */}
             </div>
         )
     } 
 } 
+
