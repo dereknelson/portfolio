@@ -6,7 +6,7 @@ import SocialIcons from '../components/SocialIcons/SocialIcons';
 import About from './about';
 import Skills from './skills';
 
-export default class App extends Component{ 
+export default class App extends Component { 
     render(){ 
         return (
             <div style={{ backgroundColor: 'white' }} className="landing-page">

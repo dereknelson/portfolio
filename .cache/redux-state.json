@@ -816,11 +816,81 @@
         "owner": "internal-data-bridge"
       }
     },
+    "9ea4fcdd-1f12-5845-a394-bae70a7fec6a": {
+      "resolve": "/Users/derek/portfolio/node_modules/gatsby-plugin-google-analytics",
+      "id": "9ea4fcdd-1f12-5845-a394-bae70a7fec6a",
+      "name": "gatsby-plugin-google-analytics",
+      "version": "2.0.14",
+      "pluginOptions": {
+        "plugins": [],
+        "trackingId": "UA-134636841-1"
+      },
+      "nodeAPIs": [],
+      "browserAPIs": [
+        "onRouteUpdate"
+      ],
+      "ssrAPIs": [
+        "onRenderBody"
+      ],
+      "pluginFilepath": "/Users/derek/portfolio/node_modules/gatsby-plugin-google-analytics",
+      "packageJson": {
+        "name": "gatsby-plugin-google-analytics",
+        "description": "Gatsby plugin to add google analytics onto a site",
+        "version": "2.0.14",
+        "main": "index.js",
+        "keywords": [
+          "gatsby",
+          "gatsby-plugin",
+          "google analytics"
+        ],
+        "author": "Kyle Mathews <mathews.kyle@gmail.com>",
+        "license": "MIT",
+        "dependencies": [
+          {
+            "name": "@babel/runtime",
+            "version": "^7.0.0"
+          }
+        ],
+        "devDependencies": [
+          {
+            "name": "@babel/cli",
+            "version": "^7.0.0"
+          },
+          {
+            "name": "@babel/core",
+            "version": "^7.0.0"
+          },
+          {
+            "name": "babel-preset-gatsby-package",
+            "version": "^0.1.3"
+          },
+          {
+            "name": "cross-env",
+            "version": "^5.1.4"
+          }
+        ],
+        "peerDependencies": [
+          {
+            "name": "gatsby",
+            "version": "^2.0.0"
+          }
+        ],
+        "optionalDependecies": [],
+        "bundledDependecies": []
+      },
+      "parent": null,
+      "children": [],
+      "internal": {
+        "contentDigest": "af4e0b35c768baaa6e1e26344d49f141",
+        "type": "SitePlugin",
+        "owner": "internal-data-bridge"
+      }
+    },
     "7374ebf2-d961-52ee-92a2-c25e7cb387a9": {
       "resolve": "/Users/derek/portfolio",
       "id": "7374ebf2-d961-52ee-92a2-c25e7cb387a9",
       "name": "default-site-plugin",
-      "version": "2d0a9aa82ce99fc70dac938d933f8868",
+      "version": "6a9b17ec49b3ccfcdd1e3956049c7d2e",
       "pluginOptions": {
         "plugins": []
       },
@@ -861,6 +931,10 @@
           {
             "name": "gatsby-image",
             "version": "^2.0.20"
+          },
+          {
+            "name": "gatsby-plugin-google-analytics",
+            "version": "^2.0.14"
           },
           {
             "name": "gatsby-plugin-manifest",
@@ -932,7 +1006,7 @@
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "37f9fd46ed3769d27b50b0796dc18159",
+        "contentDigest": "3a7c57314d612af3bc9a9bc037c96309",
         "type": "SitePlugin",
         "owner": "internal-data-bridge"
       }
@@ -1045,12 +1119,12 @@
       },
       "pathPrefix": "",
       "polyfill": true,
-      "buildTime": "2019-02-19T20:33:25.398Z",
+      "buildTime": "2019-02-19T20:35:48.695Z",
       "id": "Site",
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "713ce8c7ecd068adc64403080cebf8f2",
+        "contentDigest": "5f5f7a55f2cc54bdc0e93aaddab76de0",
         "type": "Site",
         "owner": "internal-data-bridge"
       }
@@ -1060,7 +1134,7 @@
       "children": [],
       "parent": null,
       "internal": {
-        "contentDigest": "e18f637ff5d50c80e314d51d270f597f",
+        "contentDigest": "4a1ce4e75b3186b4b70621ee33b9e4a7",
         "type": "Directory",
         "description": "Directory \"src/images\"",
         "owner": "gatsby-source-filesystem"
@@ -1072,7 +1146,7 @@
       "size": 96,
       "prettySize": "96 B",
       "modifiedTime": "2019-02-19T20:08:35.826Z",
-      "accessTime": "2019-02-19T20:33:26.974Z",
+      "accessTime": "2019-02-19T20:35:50.310Z",
       "changeTime": "2019-02-19T20:08:35.826Z",
       "birthTime": "2019-02-19T20:08:35.826Z",
       "root": "/",
@@ -1090,11 +1164,11 @@
       "blksize": 4096,
       "ino": 13746289,
       "blocks": 0,
-      "atimeMs": 1550608406974.0789,
+      "atimeMs": 1550608550310.2314,
       "mtimeMs": 1550606915826.0933,
       "ctimeMs": 1550606915826.0933,
       "birthtimeMs": 1550606915826.0452,
-      "atime": "2019-02-19T20:33:26.974Z",
+      "atime": "2019-02-19T20:35:50.310Z",
       "mtime": "2019-02-19T20:08:35.826Z",
       "ctime": "2019-02-19T20:08:35.826Z",
       "birthtime": "2019-02-19T20:08:35.826Z"
@@ -1119,7 +1193,7 @@
       "size": 769428,
       "prettySize": "769 kB",
       "modifiedTime": "2019-02-19T20:08:35.830Z",
-      "accessTime": "2019-02-19T20:10:16.857Z",
+      "accessTime": "2019-02-19T20:33:29.851Z",
       "changeTime": "2019-02-19T20:08:35.830Z",
       "birthTime": "2019-02-19T20:08:35.826Z",
       "root": "/",
@@ -1137,11 +1211,11 @@
       "blksize": 4096,
       "ino": 13746290,
       "blocks": 1504,
-      "atimeMs": 1550607016856.98,
+      "atimeMs": 1550608409851.1094,
       "mtimeMs": 1550606915829.527,
       "ctimeMs": 1550606915829.527,
       "birthtimeMs": 1550606915826.0889,
-      "atime": "2019-02-19T20:10:16.857Z",
+      "atime": "2019-02-19T20:33:29.851Z",
       "mtime": "2019-02-19T20:08:35.830Z",
       "ctime": "2019-02-19T20:08:35.830Z",
       "birthtime": "2019-02-19T20:08:35.826Z"
@@ -1239,7 +1313,7 @@
   },
   "status": {
     "plugins": {},
-    "PLUGINS_HASH": "6930e05089ccf04f9d996c4c24f90357"
+    "PLUGINS_HASH": "dbdf9d3b7d27f7b11a54a65ca348f04d"
   },
   "componentDataDependencies": {
     "nodes": {},
