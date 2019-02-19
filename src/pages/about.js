@@ -11,8 +11,8 @@ export default class About extends Component {
                 <div className="about">
                     <h1 >About me </h1>
                     <h3> 
-                    I'm the founder/ceo/lead frontend dev/marketer of {}
-                    <a href="metoo.io">metoo.io</a>
+                    I'm the founder/ceo/lead frontend dev/marketer of my app {}
+                    <a href="metoo.io">metoo</a>
                         {/* <h6>
                             (you can find out more about my experience with metoo in my blog posts below)
                         </h6> */}
