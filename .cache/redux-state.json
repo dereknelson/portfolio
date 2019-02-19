@@ -1056,12 +1056,12 @@
       "host": "localhost",
       "pathPrefix": "",
       "polyfill": true,
-      "buildTime": "2019-02-18T23:57:21.031Z",
+      "buildTime": "2019-02-19T20:01:41.572Z",
       "id": "Site",
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "6aa227345c7ac5c0e763e4f891d36adf",
+        "contentDigest": "f0365b6c67241cae12aba135e5425e1c",
         "type": "Site",
         "owner": "internal-data-bridge"
       }
@@ -1071,7 +1071,7 @@
       "children": [],
       "parent": null,
       "internal": {
-        "contentDigest": "fac643f070be71ce5659fc2852004be7",
+        "contentDigest": "a793a7c84a227632ffcf1cd52f2ec089",
         "type": "Directory",
         "description": "Directory \"src/images\"",
         "owner": "gatsby-source-filesystem"
@@ -1083,7 +1083,7 @@
       "size": 96,
       "prettySize": "96 B",
       "modifiedTime": "2019-02-18T23:49:02.067Z",
-      "accessTime": "2019-02-18T23:57:22.887Z",
+      "accessTime": "2019-02-19T20:01:43.275Z",
       "changeTime": "2019-02-18T23:49:02.067Z",
       "birthTime": "2019-02-18T23:49:02.067Z",
       "root": "/",
@@ -1092,7 +1092,7 @@
       "ext": "",
       "name": "images",
       "relativeDirectory": "..",
-      "dev": 16777221,
+      "dev": 16777223,
       "mode": 16877,
       "nlink": 3,
       "uid": 501,
@@ -1101,11 +1101,11 @@
       "blksize": 4096,
       "ino": 13711854,
       "blocks": 0,
-      "atimeMs": 1550534242887.348,
+      "atimeMs": 1550606503274.542,
       "mtimeMs": 1550533742066.9902,
       "ctimeMs": 1550533742066.9902,
       "birthtimeMs": 1550533742066.9397,
-      "atime": "2019-02-18T23:57:22.887Z",
+      "atime": "2019-02-19T20:01:43.275Z",
       "mtime": "2019-02-18T23:49:02.067Z",
       "ctime": "2019-02-18T23:49:02.067Z",
       "birthtime": "2019-02-18T23:49:02.067Z"
@@ -1130,7 +1130,7 @@
       "size": 769428,
       "prettySize": "769 kB",
       "modifiedTime": "2019-02-18T23:49:02.070Z",
-      "accessTime": "2019-02-18T23:53:48.271Z",
+      "accessTime": "2019-02-18T23:57:25.319Z",
       "changeTime": "2019-02-18T23:49:02.070Z",
       "birthTime": "2019-02-18T23:49:02.067Z",
       "root": "/",
@@ -1148,11 +1148,11 @@
       "blksize": 4096,
       "ino": 13711855,
       "blocks": 1504,
-      "atimeMs": 1550534028271.2634,
+      "atimeMs": 1550534245318.757,
       "mtimeMs": 1550533742070.4746,
       "ctimeMs": 1550533742070.4746,
       "birthtimeMs": 1550533742066.9863,
-      "atime": "2019-02-18T23:53:48.271Z",
+      "atime": "2019-02-18T23:57:25.319Z",
       "mtime": "2019-02-18T23:49:02.070Z",
       "ctime": "2019-02-18T23:49:02.070Z",
       "birthtime": "2019-02-18T23:49:02.067Z"
@@ -1250,7 +1250,7 @@
   },
   "status": {
     "plugins": {},
-    "PLUGINS_HASH": "90e0d494c882a2697a18c69fec113b36"
+    "PLUGINS_HASH": "fba2cb768b527e2a67e448553d42324e"
   },
   "componentDataDependencies": {
     "nodes": {},
@@ -1271,10 +1271,6 @@
     "blog-f7a": "32/path---blog-f-7-a-05d-NZuapzHg3X9TaN1iIixfv1W23E"
   },
   "components": {
-    "/Users/derek/portfolio/.cache/dev-404-page.js": {
-      "query": "",
-      "componentPath": "/Users/derek/portfolio/.cache/dev-404-page.js"
-    },
     "/Users/derek/portfolio/src/pages/about.js": {
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/about.js"
@@ -1290,6 +1286,10 @@
     "/Users/derek/portfolio/src/pages/skills.js": {
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/skills.js"
+    },
+    "/Users/derek/portfolio/.cache/dev-404-page.js": {
+      "query": "",
+      "componentPath": "/Users/derek/portfolio/.cache/dev-404-page.js"
     }
   },
   "staticQueryComponents": {}
