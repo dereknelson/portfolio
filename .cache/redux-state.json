@@ -1045,12 +1045,12 @@
       },
       "pathPrefix": "",
       "polyfill": true,
-      "buildTime": "2019-02-19T20:10:10.144Z",
+      "buildTime": "2019-02-19T20:21:53.444Z",
       "id": "Site",
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "4d900f89feb6cfab44d585ec32d02edd",
+        "contentDigest": "fcc5ecc9bff5dc365d43568f2d1438fb",
         "type": "Site",
         "owner": "internal-data-bridge"
       }
@@ -1060,7 +1060,7 @@
       "children": [],
       "parent": null,
       "internal": {
-        "contentDigest": "08f840f1dec9e00a218aa37f5eb00da6",
+        "contentDigest": "90cef844e1ad17d69e6219a0493dab7e",
         "type": "Directory",
         "description": "Directory \"src/images\"",
         "owner": "gatsby-source-filesystem"
@@ -1072,7 +1072,7 @@
       "size": 96,
       "prettySize": "96 B",
       "modifiedTime": "2019-02-19T20:08:35.826Z",
-      "accessTime": "2019-02-19T20:10:11.822Z",
+      "accessTime": "2019-02-19T20:21:55.182Z",
       "changeTime": "2019-02-19T20:08:35.826Z",
       "birthTime": "2019-02-19T20:08:35.826Z",
       "root": "/",
@@ -1090,11 +1090,11 @@
       "blksize": 4096,
       "ino": 13746289,
       "blocks": 0,
-      "atimeMs": 1550607011821.829,
+      "atimeMs": 1550607715181.528,
       "mtimeMs": 1550606915826.0933,
       "ctimeMs": 1550606915826.0933,
       "birthtimeMs": 1550606915826.0452,
-      "atime": "2019-02-19T20:10:11.822Z",
+      "atime": "2019-02-19T20:21:55.182Z",
       "mtime": "2019-02-19T20:08:35.826Z",
       "ctime": "2019-02-19T20:08:35.826Z",
       "birthtime": "2019-02-19T20:08:35.826Z"
@@ -1118,33 +1118,33 @@
       "extension": "jpg",
       "size": 769428,
       "prettySize": "769 kB",
-      "modifiedTime": "2019-02-18T23:49:02.070Z",
-      "accessTime": "2019-02-18T23:57:25.319Z",
-      "changeTime": "2019-02-18T23:49:02.070Z",
-      "birthTime": "2019-02-18T23:49:02.067Z",
+      "modifiedTime": "2019-02-19T20:08:35.830Z",
+      "accessTime": "2019-02-19T20:10:16.857Z",
+      "changeTime": "2019-02-19T20:08:35.830Z",
+      "birthTime": "2019-02-19T20:08:35.826Z",
       "root": "/",
       "dir": "/Users/derek/portfolio/src/images",
       "base": "avatar.jpg",
       "ext": ".jpg",
       "name": "avatar",
       "relativeDirectory": "",
-      "dev": 16777221,
+      "dev": 16777223,
       "mode": 33188,
       "nlink": 1,
       "uid": 501,
       "gid": 20,
       "rdev": 0,
       "blksize": 4096,
-      "ino": 13711855,
+      "ino": 13746290,
       "blocks": 1504,
-      "atimeMs": 1550534245318.757,
-      "mtimeMs": 1550533742070.4746,
-      "ctimeMs": 1550533742070.4746,
-      "birthtimeMs": 1550533742066.9863,
-      "atime": "2019-02-18T23:57:25.319Z",
-      "mtime": "2019-02-18T23:49:02.070Z",
-      "ctime": "2019-02-18T23:49:02.070Z",
-      "birthtime": "2019-02-18T23:49:02.067Z"
+      "atimeMs": 1550607016856.98,
+      "mtimeMs": 1550606915829.527,
+      "ctimeMs": 1550606915829.527,
+      "birthtimeMs": 1550606915826.0889,
+      "atime": "2019-02-19T20:10:16.857Z",
+      "mtime": "2019-02-19T20:08:35.830Z",
+      "ctime": "2019-02-19T20:08:35.830Z",
+      "birthtime": "2019-02-19T20:08:35.826Z"
     },
     "faff04e3-3ce2-5d76-9476-5b34fa8f0e6a": {
       "id": "faff04e3-3ce2-5d76-9476-5b34fa8f0e6a",
@@ -1239,7 +1239,7 @@
   },
   "status": {
     "plugins": {},
-    "PLUGINS_HASH": "fba2cb768b527e2a67e448553d42324e"
+    "PLUGINS_HASH": "6930e05089ccf04f9d996c4c24f90357"
   },
   "componentDataDependencies": {
     "nodes": {},
@@ -1268,13 +1268,13 @@
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/blog.js"
     },
-    "/Users/derek/portfolio/src/pages/skills.js": {
-      "query": "",
-      "componentPath": "/Users/derek/portfolio/src/pages/skills.js"
-    },
     "/Users/derek/portfolio/src/pages/index.js": {
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/index.js"
+    },
+    "/Users/derek/portfolio/src/pages/skills.js": {
+      "query": "",
+      "componentPath": "/Users/derek/portfolio/src/pages/skills.js"
     }
   },
   "staticQueryComponents": {}

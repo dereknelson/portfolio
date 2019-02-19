@@ -52,7 +52,7 @@ img {
     font-size: 0.75rem;
 }
 .about-container {
-    margin-top: 5%;
+    margin-top: 2.5%;
 }
 .about { 
 }
@@ -82,6 +82,10 @@ img {
     flex-direction: row;
     display: flex;
     justify-content: center;
+}
+.skills h1 {
+    font-size: 2.5rem;
+    font-weight: bold;
 }
 .skillsList {
     /* display: flex; */
