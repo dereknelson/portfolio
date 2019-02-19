@@ -11,8 +11,8 @@ export default class About extends Component {
                 <div className="about">
                     <h1 >About me </h1>
                     <h3> 
-                    I'm the founder/ceo/lead frontend dev/marketer of 
-                    <a href="metoo.io"> metoo.io</a>
+                    I'm the founder/ceo/lead frontend dev/marketer of {}
+                    <a href="metoo.io">metoo.io</a>
                         {/* <h6>
                             (you can find out more about my experience with metoo in my blog posts below)
                         </h6> */}
@@ -23,8 +23,8 @@ export default class About extends Component {
                     </h3>
                     <h3>
                         I blog: so far I've only written {}
-                        <a href="https://medium.com/@derek_nelson/the-story-of-a-startup-pt-1-inception-launch-82ed678cdb87" >pt. 1 of the story of metoo, </a>
-                        but there's more coming soon :)
+                        <a href="https://medium.com/@derek_nelson/the-story-of-a-startup-pt-1-inception-launch-82ed678cdb87" >pt. 1 of the story of metoo</a>
+                        , but there's more coming soon :)
                     </h3>
                 </div>
                 {/* <ScrollToNext pageSelector=".about-page" /> */}

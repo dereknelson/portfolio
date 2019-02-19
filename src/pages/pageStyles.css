@@ -40,6 +40,7 @@ img {
     font-size: 3rem;
     font-weight: bold;
     line-height: 3rem;
+    padding-top: 10px;
     /* padding-bottom: .5rem; */
 }
 .tagline {
@@ -91,7 +92,7 @@ img {
     /* display: flex; */
     /* margin */
     /* flex-direction: row; */
-    width: 100%;
+    width: 40%;
     justify-content: flex-start;
     text-align: center;
 }
@@ -100,6 +101,8 @@ img {
     display: block;
     margin-left: auto;
     margin-right: auto;
+    font-size: 1.2rem;
+
 }
 span {
     border-width: 1px;
