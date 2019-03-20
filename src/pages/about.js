@@ -2,6 +2,7 @@ import React, { Component } from 'react'
 // import { Link } from 'gatsby'
 import './pageStyles.css';
 import './responsive.css'
+import Subscribe from '../components/subscribe/subscribe';
 
 export default class About extends Component {
     render(){ 
@@ -22,10 +23,13 @@ export default class About extends Component {
                         <a href="https://twitter.com/ProdigyNelson/timelines/677195667207491584"> most popular tweets </a>
                     </h3>
                     <h3>
-                        I blog: so far I've only written {}
+                        I blog: so far I've written {}
                         <a href="https://medium.com/@derek_nelson/the-story-of-a-startup-pt-1-inception-launch-82ed678cdb87" >pt. 1 of the story of metoo</a>
-                        , but there's more coming soon :)
+                        {} and {}
+                        <a href="https://medium.com/@derek_nelson/the-five-biggest-things-ive-learned-from-starting-up-so-far-ecbdd3316a96" >the five biggest things I've learned from starting up</a>
+                        , with more coming soon :)
                     </h3>
+                    <Subscribe/>
                 </div>
                 {/* <ScrollToNext pageSelector=".about-page" /> */}
             </div>

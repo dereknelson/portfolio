@@ -8,6 +8,7 @@
     "@fortawesome/fontawesome-svg-core": "^1.2.15",
     "@fortawesome/free-solid-svg-icons": "^5.7.2",
     "@fortawesome/react-fontawesome": "^0.1.4",
+    "axios": "^0.18.0",
     "gatsby": "^2.0.53",
     "gatsby-image": "^2.0.20",
     "gatsby-plugin-google-analytics": "^2.0.14",
@@ -23,6 +24,7 @@
     "react": "^16.6.3",
     "react-dom": "^16.6.3",
     "react-helmet": "^5.2.0",
+    "react-mailchimp-subscribe": "^2.1.0",
     "sass-loader": "^7.1.0"
   },
   "keywords": [
@@ -33,7 +35,7 @@
     "build": "gatsby build",
     "develop": "gatsby develop",
     "start": "yarn run develop",
-    "deploy": "gatsby build --prefix-paths && gh-pages -d docs -b pages",
+    "deploy": "gatsby build && gh-pages -d docs -b master",
     "format": "prettier --write \"src/**/*.js\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

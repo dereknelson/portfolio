@@ -925,6 +925,10 @@
             "version": "^0.1.4"
           },
           {
+            "name": "axios",
+            "version": "^0.18.0"
+          },
+          {
             "name": "gatsby",
             "version": "^2.0.53"
           },
@@ -983,6 +987,10 @@
           {
             "name": "react-helmet",
             "version": "^5.2.0"
+          },
+          {
+            "name": "react-mailchimp-subscribe",
+            "version": "^2.1.0"
           },
           {
             "name": "sass-loader",
@@ -1119,12 +1127,12 @@
       },
       "pathPrefix": "",
       "polyfill": true,
-      "buildTime": "2019-02-19T20:35:48.695Z",
+      "buildTime": "2019-03-20T01:14:45.112Z",
       "id": "Site",
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "5f5f7a55f2cc54bdc0e93aaddab76de0",
+        "contentDigest": "6d04a1a2b36caeca8fef07643ed52a14",
         "type": "Site",
         "owner": "internal-data-bridge"
       }
@@ -1134,7 +1142,7 @@
       "children": [],
       "parent": null,
       "internal": {
-        "contentDigest": "4a1ce4e75b3186b4b70621ee33b9e4a7",
+        "contentDigest": "b28a50c3f6011e173c9c0437bc8b7281",
         "type": "Directory",
         "description": "Directory \"src/images\"",
         "owner": "gatsby-source-filesystem"
@@ -1146,7 +1154,7 @@
       "size": 96,
       "prettySize": "96 B",
       "modifiedTime": "2019-02-19T20:08:35.826Z",
-      "accessTime": "2019-02-19T20:35:50.310Z",
+      "accessTime": "2019-03-20T01:14:47.601Z",
       "changeTime": "2019-02-19T20:08:35.826Z",
       "birthTime": "2019-02-19T20:08:35.826Z",
       "root": "/",
@@ -1155,7 +1163,7 @@
       "ext": "",
       "name": "images",
       "relativeDirectory": "..",
-      "dev": 16777223,
+      "dev": 16777221,
       "mode": 16877,
       "nlink": 3,
       "uid": 501,
@@ -1164,11 +1172,11 @@
       "blksize": 4096,
       "ino": 13746289,
       "blocks": 0,
-      "atimeMs": 1550608550310.2314,
+      "atimeMs": 1553044487601.2632,
       "mtimeMs": 1550606915826.0933,
       "ctimeMs": 1550606915826.0933,
       "birthtimeMs": 1550606915826.0452,
-      "atime": "2019-02-19T20:35:50.310Z",
+      "atime": "2019-03-20T01:14:47.601Z",
       "mtime": "2019-02-19T20:08:35.826Z",
       "ctime": "2019-02-19T20:08:35.826Z",
       "birthtime": "2019-02-19T20:08:35.826Z"
@@ -1193,7 +1201,7 @@
       "size": 769428,
       "prettySize": "769 kB",
       "modifiedTime": "2019-02-19T20:08:35.830Z",
-      "accessTime": "2019-02-19T20:33:29.851Z",
+      "accessTime": "2019-03-19T20:33:36.681Z",
       "changeTime": "2019-02-19T20:08:35.830Z",
       "birthTime": "2019-02-19T20:08:35.826Z",
       "root": "/",
@@ -1202,7 +1210,7 @@
       "ext": ".jpg",
       "name": "avatar",
       "relativeDirectory": "",
-      "dev": 16777223,
+      "dev": 16777221,
       "mode": 33188,
       "nlink": 1,
       "uid": 501,
@@ -1211,11 +1219,11 @@
       "blksize": 4096,
       "ino": 13746290,
       "blocks": 1504,
-      "atimeMs": 1550608409851.1094,
+      "atimeMs": 1553027616680.5366,
       "mtimeMs": 1550606915829.527,
       "ctimeMs": 1550606915829.527,
       "birthtimeMs": 1550606915826.0889,
-      "atime": "2019-02-19T20:33:29.851Z",
+      "atime": "2019-03-19T20:33:36.681Z",
       "mtime": "2019-02-19T20:08:35.830Z",
       "ctime": "2019-02-19T20:08:35.830Z",
       "birthtime": "2019-02-19T20:08:35.826Z"
@@ -1313,7 +1321,7 @@
   },
   "status": {
     "plugins": {},
-    "PLUGINS_HASH": "dbdf9d3b7d27f7b11a54a65ca348f04d"
+    "PLUGINS_HASH": "4d8f031c2b91aecd83d9db906629975a"
   },
   "componentDataDependencies": {
     "nodes": {},
