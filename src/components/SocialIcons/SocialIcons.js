@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import './style.scss';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faMailBulk } from '@fortawesome/free-solid-svg-icons'
 import { faTwitter, faGithub, faMediumM, faInstagram } from '@fortawesome/fontawesome-free-brands'
 
 const SocialIcons = (props, context) => {

@@ -15,6 +15,11 @@
         "path": "/blog/"
     },
     {
+        "componentChunkName": "component---cache-dev-404-page-js",
+        "jsonName": "dev-404-page-5f9",
+        "path": "/dev-404-page/"
+    },
+    {
         "componentChunkName": "component---src-pages-skills-js",
         "jsonName": "skills-bfb",
         "path": "/skills/"

@@ -11,6 +11,7 @@ export default class About extends Component {
                 {/* <Nav /> */}
                 <div className="about">
                     <h1 >About me </h1>
+                    {/* <h5 style={{ fontWeight: 'normal' }} >*Disclaimer* this portfolio is a WIP. I'm pretty busy :) </h5> */}
                     <h3> 
                     I'm the founder/ceo/lead frontend dev/marketer of my app {}
                     <a href="metoo.io">metoo</a>
