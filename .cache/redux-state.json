@@ -1,22 +1,13 @@
 {
   "nodes": {
     "SitePage /dev-404-page/": {
-      "jsonName": "dev-404-page-5f9",
-      "internalComponentName": "ComponentDev404Page",
       "path": "/dev-404-page/",
-      "component": "/Users/derek/portfolio/.cache/dev-404-page.js",
-      "componentChunkName": "component---cache-dev-404-page-js",
-      "context": {},
-      "pluginCreator___NODE": "d48d1c52-fe48-53cb-8f08-aa4b47dde5a5",
-      "pluginCreatorId": "d48d1c52-fe48-53cb-8f08-aa4b47dde5a5",
-      "componentPath": "/Users/derek/portfolio/.cache/dev-404-page.js",
       "id": "SitePage /dev-404-page/",
       "parent": null,
       "children": [],
       "internal": {
         "type": "SitePage",
-        "contentDigest": "9c6cf09ac1550a30c7af82f0cd067a11",
-        "description": "d48d1c52-fe48-53cb-8f08-aa4b47dde5a5",
+        "contentDigest": "f91d29e10ba680b413138cf9ed86e655",
         "owner": "internal-data-bridge"
       }
     },
@@ -1134,16 +1125,14 @@
         "description": "About me & stuff.",
         "author": "@dereknelson"
       },
-      "port": "8000",
-      "host": "localhost",
       "pathPrefix": "",
       "polyfill": true,
-      "buildTime": "2019-03-28T19:22:09.836Z",
+      "buildTime": "2020-02-03T22:38:11.834Z",
       "id": "Site",
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "c6b797eeac2d9b0479abd1a4de4f29d1",
+        "contentDigest": "67e4f5fe708d2381404e160a088a07eb",
         "type": "Site",
         "owner": "internal-data-bridge"
       }
@@ -1153,7 +1142,7 @@
       "children": [],
       "parent": null,
       "internal": {
-        "contentDigest": "bb82392e7c390928a799f3f5a724e367",
+        "contentDigest": "a56cf92dcec6e7bb05ea4c4625e24906",
         "type": "Directory",
         "description": "Directory \"src/images\"",
         "owner": "gatsby-source-filesystem"
@@ -1165,7 +1154,7 @@
       "size": 96,
       "prettySize": "96 B",
       "modifiedTime": "2019-02-19T20:08:35.826Z",
-      "accessTime": "2019-03-28T19:22:13.317Z",
+      "accessTime": "2019-04-01T21:26:13.782Z",
       "changeTime": "2019-02-19T20:08:35.826Z",
       "birthTime": "2019-02-19T20:08:35.826Z",
       "root": "/",
@@ -1183,11 +1172,11 @@
       "blksize": 4096,
       "ino": 13746289,
       "blocks": 0,
-      "atimeMs": 1553800933317.4143,
+      "atimeMs": 1554153973782.388,
       "mtimeMs": 1550606915826.0933,
       "ctimeMs": 1550606915826.0933,
       "birthtimeMs": 1550606915826.0452,
-      "atime": "2019-03-28T19:22:13.317Z",
+      "atime": "2019-04-01T21:26:13.782Z",
       "mtime": "2019-02-19T20:08:35.826Z",
       "ctime": "2019-02-19T20:08:35.826Z",
       "birthtime": "2019-02-19T20:08:35.826Z"
@@ -1368,10 +1357,6 @@
     "/Users/derek/portfolio/src/pages/skills.js": {
       "query": "",
       "componentPath": "/Users/derek/portfolio/src/pages/skills.js"
-    },
-    "/Users/derek/portfolio/.cache/dev-404-page.js": {
-      "query": "",
-      "componentPath": "/Users/derek/portfolio/.cache/dev-404-page.js"
     }
   },
   "staticQueryComponents": {}
