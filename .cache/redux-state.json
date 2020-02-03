@@ -1127,12 +1127,12 @@
       },
       "pathPrefix": "",
       "polyfill": true,
-      "buildTime": "2020-02-03T22:38:11.834Z",
+      "buildTime": "2020-02-03T22:40:18.609Z",
       "id": "Site",
       "parent": null,
       "children": [],
       "internal": {
-        "contentDigest": "67e4f5fe708d2381404e160a088a07eb",
+        "contentDigest": "89a3d39f5b1319fcc921172bd5679274",
         "type": "Site",
         "owner": "internal-data-bridge"
       }
