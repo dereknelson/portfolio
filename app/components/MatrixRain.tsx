@@ -14,12 +14,6 @@ const CONFIG = {
   secondsToTraverseScreen: 6,
   rowsPerTick: 8,
   speedEntropy: 0.3,
-
-  // 3D Warp mode
-  warp: {
-    fov: 500,
-    zSpeed: 10,
-  },
 };
 
 // =============================================================================
@@ -28,41 +22,138 @@ const CONFIG = {
 
 const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#!%";
 const randomChar = () => CHARSET[Math.floor(Math.random() * CHARSET.length)];
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
 // =============================================================================
-// Component
+// Gravity Effect (Composable Module)
 // =============================================================================
 
-interface CardBounds {
-  x: number;        // Left edge screen position
-  y: number;        // Top edge screen position
+export interface GravityWell {
+  x: number;
+  y: number;
   width: number;
   height: number;
-  strength: number; // 0-1, how strong the gravitational effect
-  velocityX: number; // Horizontal velocity (pixels per frame)
-  velocityY: number; // Vertical velocity (pixels per frame)
+  strength: number;
 }
+
+export interface GravityConfig {
+  radius: number;
+  orbitalStrength: number;
+  pullStrength: number;
+  maxOffset: number;
+  smoothing: number;
+}
+
+export const DEFAULT_GRAVITY_CONFIG: GravityConfig = {
+  radius: 200,
+  orbitalStrength: 40,
+  pullStrength: 15,
+  maxOffset: 80,
+  smoothing: 0.08,
+};
+
+/**
+ * Creates a gravity offset calculator for the orbital wrap effect.
+ * Streams curve around the left edge of gravity wells.
+ */
+export function createGravityCalculator(config: GravityConfig) {
+  const { radius, orbitalStrength, pullStrength, maxOffset } = config;
+
+  return function getGravityOffset(
+    x: number,
+    y: number,
+    wells: GravityWell[]
+  ): { dx: number; dy: number; brightness: number } {
+    let dx = 0;
+    let dy = 0;
+    let brightness = 0;
+
+    for (const well of wells) {
+      if (well.strength < 0.01) continue;
+
+      // Gravity point at left edge of the well
+      const edgeX = well.x;
+      const centerY = well.y + well.height / 2;
+
+      // Only affect streams to the LEFT of the edge
+      if (x > edgeX + 50) continue;
+
+      // Vector from edge to character
+      const fromEdgeX = x - edgeX;
+      const fromEdgeY = y - centerY;
+      const dist = Math.sqrt(fromEdgeX * fromEdgeX + fromEdgeY * fromEdgeY);
+
+      if (dist > radius || dist < 15) continue;
+
+      // Normalized directions
+      const radialX = fromEdgeX / dist;
+      const radialY = fromEdgeY / dist;
+      const tangentX = -radialY;
+      const tangentY = radialX;
+
+      const normalizedDist = dist / radius;
+
+      // Orbital: strongest at middle distances
+      const orbitalFalloff = Math.sin(normalizedDist * Math.PI);
+      const orbitalAmount = orbitalFalloff * well.strength * orbitalStrength;
+
+      // Pull: only at outer edges, zero near center
+      const pullFalloff = Math.pow(normalizedDist, 0.5) * (1 - normalizedDist);
+      const pullAmount = pullFalloff * well.strength * pullStrength;
+
+      dx += tangentX * orbitalAmount - radialX * pullAmount;
+      dy += tangentY * orbitalAmount - radialY * pullAmount;
+
+      brightness = Math.max(brightness, pullFalloff * well.strength * 0.6);
+    }
+
+    // Clamp offset
+    const offsetDist = Math.sqrt(dx * dx + dy * dy);
+    if (offsetDist > maxOffset) {
+      dx = (dx / offsetDist) * maxOffset;
+      dy = (dy / offsetDist) * maxOffset;
+    }
+
+    return { dx, dy, brightness };
+  };
+}
+
+// =============================================================================
+// Main Component
+// =============================================================================
 
 interface MatrixRainProps {
-  warpIntensity?: number;
-  cardBounds?: CardBounds[]; // Cards that bend the matrix around them
+  /** Array of gravity wells that bend the matrix around them */
+  gravityWells?: GravityWell[];
+  /** Enable/disable the gravity effect entirely */
+  enableGravity?: boolean;
+  /** Custom gravity configuration */
+  gravityConfig?: Partial<GravityConfig>;
+  /** Show debug visualization of gravity wells */
+  debug?: boolean;
 }
 
-export function MatrixRain({ warpIntensity = 0, cardBounds = [] }: MatrixRainProps) {
+export function MatrixRain({
+  gravityWells = [],
+  enableGravity = true,
+  gravityConfig = {},
+  debug = false,
+}: MatrixRainProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { width, height } = useWindowDimensions();
-  const warpIntensityRef = useRef(warpIntensity);
-  const cardBoundsRef = useRef(cardBounds);
+  const gravityWellsRef = useRef(gravityWells);
+  const enableGravityRef = useRef(enableGravity);
+
+  // Merge custom config with defaults
+  const config = { ...DEFAULT_GRAVITY_CONFIG, ...gravityConfig };
 
   useEffect(() => {
-    warpIntensityRef.current = warpIntensity;
-  }, [warpIntensity]);
+    gravityWellsRef.current = gravityWells;
+  }, [gravityWells]);
 
   useEffect(() => {
-    cardBoundsRef.current = cardBounds;
-  }, [cardBounds]);
+    enableGravityRef.current = enableGravity;
+  }, [enableGravity]);
 
   useEffect(() => {
     if (Platform.OS !== "web" || !canvasRef.current) return;
@@ -78,17 +169,14 @@ export function MatrixRain({ warpIntensity = 0, cardBounds = [] }: MatrixRainPro
     const numCols = Math.ceil(width / cellSize);
     const numRows = Math.ceil(height / cellSize);
 
-    // Rain speed calculation
     const totalDistance = numRows + CONFIG.trailLength;
     const rowsPerSecond = totalDistance / CONFIG.secondsToTraverseScreen;
 
-    // Radial zoom burst config
-    const BURST_RADIUS = 500; // Large radius for the zoom effect
-    const BURST_STRENGTH = 50; // How far characters get pushed
-    const MAX_OFFSET = 80; // Maximum displacement
+    // Create gravity calculator
+    const getGravityOffset = createGravityCalculator(config);
 
     // ===================
-    // Particles - one per column for rain
+    // Particles
     // ===================
     interface Particle {
       col: number;
@@ -96,7 +184,7 @@ export function MatrixRain({ warpIntensity = 0, cardBounds = [] }: MatrixRainPro
       speed: number;
       lastTickRow: number;
       chars: string[];
-      offsets: { x: number; y: number }[]; // Per-character offsets
+      offsets: { x: number; y: number }[];
     }
 
     const particles: Particle[] = [];
@@ -109,56 +197,6 @@ export function MatrixRain({ warpIntensity = 0, cardBounds = [] }: MatrixRainPro
         chars: Array.from({ length: CONFIG.trailLength }, () => randomChar()),
         offsets: Array.from({ length: CONFIG.trailLength }, () => ({ x: 0, y: 0 })),
       });
-    }
-
-    // Calculate radial zoom burst effect - characters stream OUTWARD from gravity center
-    function getGravityOffset(x: number, y: number): { dx: number; dy: number; brightness: number } {
-      let dx = 0;
-      let dy = 0;
-      let brightness = 0;
-
-      for (const card of cardBoundsRef.current) {
-        if (card.strength < 0.01) continue;
-
-        // Gravity center is at card position (left or right side of screen)
-        const centerX = card.x + card.width / 2;
-        const centerY = card.y + card.height / 2;
-
-        // Vector FROM center TO character (for outward push)
-        const distX = x - centerX;
-        const distY = y - centerY;
-        const dist = Math.sqrt(distX * distX + distY * distY);
-
-        if (dist > BURST_RADIUS || dist < 20) continue;
-
-        // Radial direction (normalized) - pointing outward from center
-        const radialX = distX / dist;
-        const radialY = distY / dist;
-
-        // Zoom burst: push characters OUTWARD along radial line
-        // Effect is stronger further from center (perspective zoom)
-        const normalizedDist = dist / BURST_RADIUS;
-
-        // Quadratic falloff from edges, peaks in middle distance
-        const distanceFactor = normalizedDist * (1 - normalizedDist * 0.5);
-        const pushStrength = distanceFactor * card.strength * BURST_STRENGTH;
-
-        dx += radialX * pushStrength;
-        dy += radialY * pushStrength;
-
-        // Brightness boost - brighter near center (the "light source")
-        const brightnessFalloff = Math.pow(1 - normalizedDist, 2);
-        brightness = Math.max(brightness, brightnessFalloff * card.strength * 0.6);
-      }
-
-      // Clamp offset
-      const offsetDist = Math.sqrt(dx * dx + dy * dy);
-      if (offsetDist > MAX_OFFSET) {
-        dx = (dx / offsetDist) * MAX_OFFSET;
-        dy = (dy / offsetDist) * MAX_OFFSET;
-      }
-
-      return { dx, dy, brightness };
     }
 
     // ===================
@@ -190,6 +228,34 @@ export function MatrixRain({ warpIntensity = 0, cardBounds = [] }: MatrixRainPro
     }
 
     // ===================
+    // Debug Drawing
+    // ===================
+    function drawDebug(wells: GravityWell[]) {
+      for (const well of wells) {
+        const edgeX = well.x;
+        const centerY = well.y + well.height / 2;
+
+        // Gravity point
+        ctx.fillStyle = "#ff0000";
+        ctx.beginPath();
+        ctx.arc(edgeX, centerY, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Radius arc
+        ctx.strokeStyle = "#ff0000";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(edgeX, centerY, config.radius, Math.PI * 0.5, Math.PI * 1.5);
+        ctx.stroke();
+
+        // Well bounds
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(well.x, well.y, well.width, well.height);
+      }
+    }
+
+    // ===================
     // Animation
     // ===================
     let animationId: number;
@@ -208,12 +274,13 @@ export function MatrixRain({ warpIntensity = 0, cardBounds = [] }: MatrixRainPro
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
 
+      const wells = gravityWellsRef.current;
+      const gravityEnabled = enableGravityRef.current;
+
       // Update and draw particles
       for (const p of particles) {
-        // Update position - always falling down
         p.y += rowsPerSecond * deltaSeconds * p.speed;
 
-        // Character tick
         const tickRow = Math.floor(p.y / CONFIG.rowsPerTick);
         if (tickRow !== p.lastTickRow) {
           p.lastTickRow = tickRow;
@@ -222,7 +289,6 @@ export function MatrixRain({ warpIntensity = 0, cardBounds = [] }: MatrixRainPro
           }
         }
 
-        // Reset when past bottom
         if (p.y > numRows + CONFIG.trailLength) {
           p.y = -CONFIG.trailLength;
           p.speed = 1 + (Math.random() - 0.5) * 2 * CONFIG.speedEntropy;
@@ -231,7 +297,6 @@ export function MatrixRain({ warpIntensity = 0, cardBounds = [] }: MatrixRainPro
         const headRow = Math.floor(p.y);
         const baseX = p.col * cellSize + cellSize / 2;
 
-        // Draw trail with gravity effect
         for (let t = CONFIG.trailLength - 1; t >= 0; t--) {
           const row = headRow - t;
           if (row < 0 || row >= numRows) continue;
@@ -239,30 +304,36 @@ export function MatrixRain({ warpIntensity = 0, cardBounds = [] }: MatrixRainPro
           const baseY = row * cellSize + cellSize / 2;
           let brightness = 1 - t / CONFIG.trailLength;
 
-          // Apply gravity - calculate offset based on current position
-          const gravity = getGravityOffset(baseX, baseY);
+          // Apply gravity effect if enabled
+          if (gravityEnabled && wells.length > 0) {
+            const gravity = getGravityOffset(baseX, baseY, wells);
 
-          // Smoothly interpolate offset
-          const targetX = gravity.dx;
-          const targetY = gravity.dy;
-          p.offsets[t].x += (targetX - p.offsets[t].x) * 0.15;
-          p.offsets[t].y += (targetY - p.offsets[t].y) * 0.15;
+            p.offsets[t].x += (gravity.dx - p.offsets[t].x) * config.smoothing;
+            p.offsets[t].y += (gravity.dy - p.offsets[t].y) * config.smoothing;
 
-          // Apply brightness boost near gravity well
-          brightness = clamp(brightness + gravity.brightness, 0, 1);
+            brightness = clamp(brightness + gravity.brightness, 0, 1);
+          } else {
+            // Decay offsets when gravity is disabled
+            p.offsets[t].x *= 0.95;
+            p.offsets[t].y *= 0.95;
+          }
 
-          // Draw at offset position
           drawChar(baseX + p.offsets[t].x, baseY + p.offsets[t].y, p.chars[t], cellSize, brightness);
         }
       }
 
       ctx.shadowBlur = 0;
+
+      // Debug visualization
+      if (debug && wells.length > 0) {
+        drawDebug(wells);
+      }
     };
 
     animationId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(animationId);
 
-  }, [width, height]);
+  }, [width, height, config.radius, config.orbitalStrength, config.pullStrength, config.maxOffset, config.smoothing, debug]);
 
   if (Platform.OS !== "web") return null;
 

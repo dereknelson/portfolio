@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { MatrixRain } from "./components/MatrixRain";
+import { MatrixRain, GravityWell } from "./components/MatrixRain";
 
 // =============================================================================
 // Data
@@ -36,7 +36,7 @@ const experience = [
     period: "January 2020 - Present",
     bullets: [
       "Owner and operator of a full stack & full service app development company",
-      "Design and develop useful UIs, handle code review, own frontend/backend release process, developer operations, business infrastructure such as CMS/payments, and creating assets for marketing campaigns",
+      "Design and develop useful UIs, handle code review, the full stack release process, developer operations, business infrastructure (CMS & payments), and more.",
     ],
   },
   {
@@ -258,20 +258,21 @@ function ExperienceCard({
   period: string;
   bullets: string[];
   index: number;
-  onMeasure?: (index: number, y: number, height: number, width: number) => void;
+  onMeasure?: (index: number, screenY: number, height: number, width: number) => void;
   scrollProgress?: number;
   direction?: number;
   viewportWidth?: number;
 }) {
   const [hovered, setHovered] = useState(false);
+  const viewRef = useRef<View>(null);
 
   // First card is always visible, others slide in from sides
   const effectiveProgress = index === 0 ? 1 : scrollProgress;
 
   // Slide animation - cards come in from left or right based on direction
   const slideDistance = direction === -1
-    ? -viewportWidth * 0.2
-    : viewportWidth * 0.2;
+    ? -viewportWidth * 0.08
+    : viewportWidth * 0.08;
 
   const translateX = (1 - effectiveProgress) * slideDistance;
   const opacity = effectiveProgress;
@@ -279,6 +280,7 @@ function ExperienceCard({
 
   return (
     <View
+      ref={viewRef}
       style={{
         opacity,
         transform: [
@@ -286,10 +288,20 @@ function ExperienceCard({
           { scale },
         ],
       }}
-      onLayout={(e) => {
-        if (onMeasure) {
-          const { y, height, width } = e.nativeEvent.layout;
-          onMeasure(index, y, height, width);
+      onLayout={() => {
+        if (onMeasure && Platform.OS === "web" && viewRef.current) {
+          // Delay to ensure AnimatedSection translateY animation completes
+          setTimeout(() => {
+            const element = viewRef.current as unknown as HTMLElement;
+            if (element && element.getBoundingClientRect) {
+              const rect = element.getBoundingClientRect();
+              // rect.top is screen Y; convert to content Y by adding current scroll
+              // Since we're inside ScrollView, we need to track scroll separately
+              // For now, store screen Y and handle in scroll handler
+              console.log(`Card ${index} measured: top=${rect.top}, height=${rect.height}`);
+              onMeasure(index, rect.top, rect.height, rect.width);
+            }
+          }, 600); // Wait for animations to settle
         }
       }}
     >
@@ -392,57 +404,41 @@ function ProjectCard({
 export default function Portfolio() {
   const headerAnim = useAnimatedValue(0);
   const underlineAnim = useAnimatedValue(300);
-  const [cardBounds, setCardBounds] = useState<{ x: number; y: number; width: number; height: number; strength: number; velocityX: number; velocityY: number }[]>([]);
+  const [gravityWells, setGravityWells] = useState<GravityWell[]>([]);
   const prevCardPositions = useRef<Record<string, { x: number; y: number; timestamp: number }>>({});
   const [cardAnimations, setCardAnimations] = useState<{ progress: number; direction: number }[]>(
-    experience.map((_, i) => ({ progress: 1, direction: i % 2 === 0 ? 1 : -1 })) // All cards visible by default
+    experience.map((_, i) => ({ progress: i === 0 ? 1 : 0, direction: i % 2 === 0 ? 1 : -1 })) // First card visible, others hidden until they scroll into view
   );
   const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
   const experienceCardLayouts = useRef<{ y: number; height: number; width: number }[]>([]);
-  const experienceSectionY = useRef(0);
   const scrollViewRef = useRef<ScrollView>(null);
   const hasInitializedRef = useRef(false);
+  const currentScrollY = useRef(0); // Track current scroll for measurements
 
-  // Initialize gravity wells on mount (for first card which is always visible)
-  useEffect(() => {
-    if (hasInitializedRef.current) return;
 
-    // Small delay to ensure layout measurements are ready
-    const timer = setTimeout(() => {
-      if (experienceCardLayouts.current[0]) {
-        hasInitializedRef.current = true;
-        const cardData = experienceCardLayouts.current[0];
-        const timestamp = performance.now();
-        const vw = viewportSize.width;
-        const vh = viewportSize.height;
-        const contentWidth = Math.min(vw, 800);
-        const cardWidth = cardData.width || contentWidth - 48;
+  // Handle card measurement - converts screen Y to content Y
+  const handleCardMeasure = (index: number, screenY: number, height: number, width: number) => {
+    // Convert screen Y to content Y by adding current scroll position
+    const contentY = screenY + currentScrollY.current;
+    console.log(`Card ${index}: screenY=${screenY}, scrollY=${currentScrollY.current}, contentY=${contentY}`);
+    experienceCardLayouts.current[index] = { y: contentY, height, width };
 
-        // First card is always at progress=1, direction=1
-        const cardX = vw / 2 - cardWidth / 2;
-        const cardScreenY = cardData.y;
+    // Create initial gravity well for the first visible card
+    if (index === 0 && !hasInitializedRef.current) {
+      hasInitializedRef.current = true;
+      const contentWidth = Math.min(viewportSize.width, 800);
+      const cardWidth = width || contentWidth - 48;
+      const cardX = viewportSize.width / 2 - cardWidth / 2;
 
-        prevCardPositions.current['card_0'] = { x: cardX, y: cardScreenY, timestamp };
-
-        setCardBounds([{
-          x: cardX,
-          y: cardScreenY,
-          width: cardWidth,
-          height: cardData.height,
-          strength: 1.5,
-          velocityX: 0,
-          velocityY: 0,
-        }]);
-      }
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [viewportSize]);
-
-  // Handle card measurement (y and width relative to section)
-  const handleCardMeasure = (index: number, relativeY: number, height: number, width: number) => {
-    const absoluteY = experienceSectionY.current + relativeY;
-    experienceCardLayouts.current[index] = { y: absoluteY, height, width };
+      // Use screen Y directly for initial gravity well (scroll is ~0 at init)
+      setGravityWells([{
+        x: cardX,
+        y: screenY,
+        width: cardWidth,
+        height,
+        strength: 1,
+      }]);
+    }
   };
 
   // ==========================================
@@ -455,30 +451,26 @@ export default function Portfolio() {
   // Clamp value between 0 and 1
   const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
 
-  // Calculate progress based on card's position in viewport
-  // Card animates in as it enters the viewport from the bottom
+  // Calculate progress based on scroll position
+  // Cards animate in sequentially as you scroll
+  const SCROLL_PER_CARD = 250; // Each card takes 250px of scroll to animate
+
   const getCardProgress = (
-    cardTop: number,
-    viewportHeight: number,
+    scrollY: number,
     cardIndex: number
   ): number => {
     // First card is always fully visible
     if (cardIndex === 0) return 1;
 
-    // Card position relative to viewport:
-    // cardTop = 0 means card is at top of viewport
-    // cardTop = viewportHeight means card is at bottom of viewport
-    // cardTop > viewportHeight means card is below viewport
+    // Each subsequent card animates over SCROLL_PER_CARD pixels
+    // Card 1: scrollY 0-250, Card 2: scrollY 250-500, etc.
+    const cardStartScroll = (cardIndex - 1) * SCROLL_PER_CARD;
+    const cardEndScroll = cardIndex * SCROLL_PER_CARD;
 
-    // Animation zone: card animates from when it enters viewport to when it's 60% up
-    const enterPoint = viewportHeight; // Bottom of viewport
-    const fullVisiblePoint = viewportHeight * 0.4; // 40% from top
+    if (scrollY <= cardStartScroll) return 0;
+    if (scrollY >= cardEndScroll) return 1;
 
-    if (cardTop >= enterPoint) return 0; // Below viewport
-    if (cardTop <= fullVisiblePoint) return 1; // Above animation zone
-
-    // Animate between enter and full visible
-    const progress = (enterPoint - cardTop) / (enterPoint - fullVisiblePoint);
+    const progress = (scrollY - cardStartScroll) / SCROLL_PER_CARD;
     return ease(clamp01(progress));
   };
 
@@ -551,6 +543,7 @@ export default function Portfolio() {
   const handleScroll = (e: any) => {
     const { contentOffset, layoutMeasurement } = e.nativeEvent;
     const scrollY = contentOffset.y;
+    currentScrollY.current = scrollY; // Track for measurements
     const viewportHeight = layoutMeasurement.height;
     const viewportWidth = layoutMeasurement.width;
     const timestamp = performance.now();
@@ -559,7 +552,8 @@ export default function Portfolio() {
     const contentWidth = Math.min(viewportWidth, 800);
 
     const newAnimations: { progress: number; direction: number }[] = [];
-    let activeGravityWell: { x: number; y: number; width: number; height: number; strength: number; velocityX: number; velocityY: number } | null = null;
+    let activeGravityWell: GravityWell | null = null;
+    let lastVisibleCardIndex = 0;
 
     experienceCardLayouts.current.forEach((cardData, index) => {
       const direction = index % 2 === 0 ? 1 : -1;
@@ -567,34 +561,56 @@ export default function Portfolio() {
       // Calculate card's position relative to viewport (top of viewport = 0)
       const cardScreenY = cardData ? cardData.y - scrollY : viewportHeight + 100;
 
-      // Calculate progress based on card's viewport position
-      const progress = getCardProgress(cardScreenY, viewportHeight, index);
+      // Calculate progress based on scroll position (sequential animation)
+      const progress = getCardProgress(scrollY, index);
 
       newAnimations.push({ progress, direction });
 
-      // Only create ONE gravity well - for the card currently animating (0 < progress < 1)
-      // Skip cards that are fully visible (progress = 1) or not visible (progress = 0)
-      if (cardData && !activeGravityWell && progress > 0.05 && progress < 0.95) {
+      // Track the last card that's at least partially visible
+      if (progress > 0) {
+        lastVisibleCardIndex = index;
+      }
+
+      // Create gravity well for the card that's currently animating
+      if (cardData && !activeGravityWell && progress > 0.01 && progress < 0.99) {
         const cardWidth = cardData.width || contentWidth - 48;
-        const gravityBounds = getCardBounds(
-          progress,
-          direction,
-          cardScreenY,
-          cardWidth,
-          cardData.height,
-          viewportWidth,
-          viewportHeight,
-          timestamp,
-          index
-        );
-        if (gravityBounds) {
-          activeGravityWell = gravityBounds;
-        }
+
+        // Calculate the card's current X position based on slide animation
+        const slideDistance = direction === -1 ? -viewportWidth * 0.08 : viewportWidth * 0.08;
+        const slideOffset = (1 - progress) * slideDistance;
+        const cardCenterX = viewportWidth / 2 + slideOffset;
+
+        activeGravityWell = {
+          x: cardCenterX - cardWidth / 2,
+          y: cardScreenY,
+          width: cardWidth,
+          height: cardData.height,
+          strength: 1,
+        };
       }
     });
 
+    // If no card is currently animating, keep gravity well at the last visible card
+    if (!activeGravityWell && lastVisibleCardIndex > 0) {
+      const cardData = experienceCardLayouts.current[lastVisibleCardIndex];
+      if (cardData) {
+        const direction = lastVisibleCardIndex % 2 === 0 ? 1 : -1;
+        const cardScreenY = cardData.y - scrollY;
+        const cardWidth = cardData.width || contentWidth - 48;
+        const cardCenterX = viewportWidth / 2; // Centered since fully visible
+
+        activeGravityWell = {
+          x: cardCenterX - cardWidth / 2,
+          y: cardScreenY,
+          width: cardWidth,
+          height: cardData.height,
+          strength: 0.8,
+        };
+      }
+    }
+
     setCardAnimations(newAnimations);
-    setCardBounds(activeGravityWell ? [activeGravityWell] : []);
+    setGravityWells(activeGravityWell ? [activeGravityWell] : []);
   };
 
   return (
@@ -603,7 +619,11 @@ export default function Portfolio() {
       <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }]} />
 
       {/* Matrix rain background with card gravity effect */}
-      <MatrixRain warpIntensity={0} cardBounds={cardBounds} />
+      <MatrixRain
+        gravityWells={gravityWells}
+        enableGravity={true}
+        debug={false}
+      />
 
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
@@ -685,21 +705,19 @@ export default function Portfolio() {
           </Section>
 
           {/* Experience */}
-          <View onLayout={(e) => { experienceSectionY.current = e.nativeEvent.layout.y; }}>
-            <Section title="Experience" delay={500}>
-              {experience.map((exp, i) => (
-                <ExperienceCard
-                  key={exp.company}
-                  {...exp}
-                  index={i}
-                  onMeasure={handleCardMeasure}
-                  scrollProgress={cardAnimations[i]?.progress ?? 0}
-                  direction={cardAnimations[i]?.direction ?? (i % 2 === 0 ? -1 : 1)}
-                  viewportWidth={viewportSize.width}
-                />
-              ))}
-            </Section>
-          </View>
+          <Section title="Experience" delay={500}>
+            {experience.map((exp, i) => (
+              <ExperienceCard
+                key={exp.company}
+                {...exp}
+                index={i}
+                onMeasure={handleCardMeasure}
+                scrollProgress={cardAnimations[i]?.progress ?? 0}
+                direction={cardAnimations[i]?.direction ?? (i % 2 === 0 ? -1 : 1)}
+                viewportWidth={viewportSize.width}
+              />
+            ))}
+          </Section>
 
           {/* Projects */}
           <Section title="Noteworthy Projects" delay={900}>
@@ -708,14 +726,6 @@ export default function Portfolio() {
             ))}
           </Section>
 
-          {/* Footer */}
-          <AnimatedSection delay={1600}>
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>
-                Built with Expo + React Native Web
-              </Text>
-            </View>
-          </AnimatedSection>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -937,16 +947,5 @@ const styles = StyleSheet.create({
     ...(Platform.OS === "web" && {
       textShadow: "0 0 10px rgba(96, 165, 250, 0.5)",
     }),
-  },
-  footer: {
-    alignItems: "center",
-    paddingVertical: 32,
-    borderTopWidth: 1,
-    borderTopColor: "rgba(60, 60, 60, 0.3)",
-    marginTop: 32,
-  },
-  footerText: {
-    fontSize: 14,
-    color: "#475569",
   },
 });
