@@ -407,7 +407,6 @@ export default function Portfolio() {
   const headerAnim = useAnimatedValue(0);
   const underlineAnim = useAnimatedValue(300);
   const [gravityWells, setGravityWells] = useState<GravityWell[]>([]);
-  const prevCardPositions = useRef<Record<string, { x: number; y: number; timestamp: number }>>({});
   const [cardAnimations, setCardAnimations] = useState<{ progress: number; direction: number }[]>(
     experience.map((_, i) => ({ progress: i === 0 ? 1 : 0, direction: i % 2 === 0 ? 1 : -1 })) // First card visible, others hidden until they scroll into view
   );
@@ -476,71 +475,6 @@ export default function Portfolio() {
     return ease(clamp01(progress));
   };
 
-  // Calculate card bounds for gravity effect, including velocity
-  // Now creates gravity wells for ALL visible cards, not just animating ones
-  const getCardBounds = (
-    progress: number,
-    direction: number,
-    cardScreenY: number,
-    cardWidth: number,
-    cardHeight: number,
-    viewportWidth: number,
-    viewportHeight: number,
-    timestamp: number,
-    cardIndex: number
-  ) => {
-    // Skip if card is not visible at all (fully off-screen)
-    if (progress <= 0) return null;
-
-    // Skip if card is off-screen vertically
-    if (cardScreenY + cardHeight < -100 || cardScreenY > viewportHeight + 100) return null;
-
-    const slideDistance = direction === -1 ? -viewportWidth * 0.2 : viewportWidth * 0.2;
-    const slideOffset = (1 - progress) * slideDistance;
-    const cardCenterX = viewportWidth / 2 + slideOffset;
-    const cardX = cardCenterX - cardWidth / 2;
-
-    // Calculate velocity from previous position
-    let velocityX = 0;
-    let velocityY = 0;
-
-    // Use per-card velocity tracking
-    const prevKey = `card_${cardIndex}`;
-    const prev = prevCardPositions.current[prevKey];
-    if (prev) {
-      const deltaTime = (timestamp - prev.timestamp) / 1000;
-      if (deltaTime > 0 && deltaTime < 0.1) {
-        velocityX = (cardX - prev.x) / deltaTime;
-        velocityY = (cardScreenY - prev.y) / deltaTime;
-        velocityX = Math.max(-2000, Math.min(2000, velocityX));
-        velocityY = Math.max(-2000, Math.min(2000, velocityY));
-      }
-    }
-    prevCardPositions.current[prevKey] = { x: cardX, y: cardScreenY, timestamp };
-
-    // Strength calculation:
-    // - During animation (0 < progress < 1): peaks at 50% progress
-    // - When fully visible (progress = 1): constant moderate strength
-    let strength: number;
-    if (progress >= 0.99) {
-      // Fully visible card - constant gravity well
-      strength = 1.5;
-    } else {
-      // Animating card - stronger effect that peaks at 50%
-      strength = progress * (1 - progress) * 8;
-    }
-
-    return {
-      x: cardX,
-      y: cardScreenY,
-      width: cardWidth,
-      height: cardHeight,
-      strength,
-      velocityX,
-      velocityY,
-    };
-  };
-
   // Main scroll handler
   const handleScroll = (e: any) => {
     const { contentOffset, layoutMeasurement } = e.nativeEvent;
@@ -554,8 +488,7 @@ export default function Portfolio() {
     const contentWidth = Math.min(viewportWidth, 800);
 
     const newAnimations: { progress: number; direction: number }[] = [];
-    let activeGravityWell: GravityWell | null = null;
-    let lastVisibleCardIndex = 0;
+    const newGravityWells: GravityWell[] = [];
 
     experienceCardLayouts.current.forEach((cardData, index) => {
       const direction = index % 2 === 0 ? 1 : -1;
@@ -568,52 +501,28 @@ export default function Portfolio() {
 
       newAnimations.push({ progress, direction });
 
-      // Track the last card that's at least partially visible
-      if (progress > 0) {
-        lastVisibleCardIndex = index;
-      }
-
-      // Create gravity well for the card that's currently animating
-      if (cardData && !activeGravityWell && progress > 0.01 && progress < 0.99) {
+      // Create gravity well for every visible card on screen
+      if (cardData && progress > 0) {
         const cardWidth = cardData.width || contentWidth - 48;
-
-        // Calculate the card's current X position based on slide animation
         const gravSlideFactor = viewportWidth < 500 ? 0.03 : 0.08;
         const slideDistance = direction === -1 ? -viewportWidth * gravSlideFactor : viewportWidth * gravSlideFactor;
         const slideOffset = (1 - progress) * slideDistance;
         const cardCenterX = viewportWidth / 2 + slideOffset;
 
-        activeGravityWell = {
-          x: cardCenterX - cardWidth / 2,
-          y: cardScreenY,
-          width: cardWidth,
-          height: cardData.height,
-          strength: 1,
-        };
+        // Pad the well slightly so characters accumulate around edges
+        const pad = 20;
+        newGravityWells.push({
+          x: cardCenterX - cardWidth / 2 - pad,
+          y: cardScreenY - pad,
+          width: cardWidth + pad * 2,
+          height: cardData.height + pad * 2,
+          strength: progress >= 0.99 ? 1.2 : progress,
+        });
       }
     });
 
-    // If no card is currently animating, keep gravity well at the last visible card
-    if (!activeGravityWell && lastVisibleCardIndex > 0) {
-      const cardData = experienceCardLayouts.current[lastVisibleCardIndex];
-      if (cardData) {
-        const direction = lastVisibleCardIndex % 2 === 0 ? 1 : -1;
-        const cardScreenY = cardData.y - scrollY;
-        const cardWidth = cardData.width || contentWidth - 48;
-        const cardCenterX = viewportWidth / 2; // Centered since fully visible
-
-        activeGravityWell = {
-          x: cardCenterX - cardWidth / 2,
-          y: cardScreenY,
-          width: cardWidth,
-          height: cardData.height,
-          strength: 0.8,
-        };
-      }
-    }
-
     setCardAnimations(newAnimations);
-    setGravityWells(activeGravityWell ? [activeGravityWell] : []);
+    setGravityWells(newGravityWells);
   };
 
   return (
