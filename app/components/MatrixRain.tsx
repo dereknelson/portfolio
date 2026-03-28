@@ -7,8 +7,8 @@ import { View, StyleSheet, Platform, useWindowDimensions } from "react-native";
 
 const CONFIG = {
   // Appearance
-  opacity: 0.3,
-  trailLength: 20,
+  opacity: 0.45,
+  trailLength: 28,
 
   // Rain mode (default)
   secondsToTraverseScreen: 6,
@@ -38,26 +38,40 @@ export interface GravityWell {
 
 export interface GravityConfig {
   radius: number;
-  orbitalStrength: number;
   pullStrength: number;
+  surfaceFlowStrength: number;
   maxOffset: number;
   smoothing: number;
 }
 
 export const DEFAULT_GRAVITY_CONFIG: GravityConfig = {
-  radius: 200,
-  orbitalStrength: 40,
-  pullStrength: 15,
-  maxOffset: 80,
-  smoothing: 0.08,
+  radius: 300,
+  pullStrength: 60,
+  surfaceFlowStrength: 25,
+  maxOffset: 160,
+  smoothing: 0.12,
 };
 
 /**
- * Creates a gravity offset calculator for the orbital wrap effect.
- * Streams curve around the left edge of gravity wells.
+ * Nearest point on an axis-aligned rectangle to a given point.
+ */
+function nearestPointOnRect(
+  px: number, py: number,
+  rx: number, ry: number, rw: number, rh: number
+): { nx: number; ny: number } {
+  return {
+    nx: clamp(px, rx, rx + rw),
+    ny: clamp(py, ry, ry + rh),
+  };
+}
+
+/**
+ * Creates a gravity calculator that pulls characters toward the card
+ * surface from ALL directions. Characters accumulate on and flow along
+ * card edges, getting brighter as they approach — like the Smith effect.
  */
 export function createGravityCalculator(config: GravityConfig) {
-  const { radius, orbitalStrength, pullStrength, maxOffset } = config;
+  const { radius, pullStrength, surfaceFlowStrength, maxOffset } = config;
 
   return function getGravityOffset(
     x: number,
@@ -71,40 +85,49 @@ export function createGravityCalculator(config: GravityConfig) {
     for (const well of wells) {
       if (well.strength < 0.01) continue;
 
-      // Gravity point at left edge of the well
-      const edgeX = well.x;
-      const centerY = well.y + well.height / 2;
+      // Find nearest point on the card rectangle
+      const { nx, ny } = nearestPointOnRect(
+        x, y, well.x, well.y, well.width, well.height
+      );
 
-      // Only affect streams to the LEFT of the edge
-      if (x > edgeX + 50) continue;
+      // Vector from character toward the nearest surface point
+      const toSurfX = nx - x;
+      const toSurfY = ny - y;
+      const dist = Math.sqrt(toSurfX * toSurfX + toSurfY * toSurfY);
 
-      // Vector from edge to character
-      const fromEdgeX = x - edgeX;
-      const fromEdgeY = y - centerY;
-      const dist = Math.sqrt(fromEdgeX * fromEdgeX + fromEdgeY * fromEdgeY);
+      // Character is inside the card — flow downward along surface
+      if (dist < 1) {
+        dy += surfaceFlowStrength * well.strength * 0.5;
+        brightness = Math.max(brightness, 0.85 * well.strength);
+        continue;
+      }
 
-      if (dist > radius || dist < 15) continue;
+      if (dist > radius) continue;
 
-      // Normalized directions
-      const radialX = fromEdgeX / dist;
-      const radialY = fromEdgeY / dist;
-      const tangentX = -radialY;
-      const tangentY = radialX;
+      // Normalized direction toward surface
+      const dirX = toSurfX / dist;
+      const dirY = toSurfY / dist;
 
-      const normalizedDist = dist / radius;
+      // Proximity: 1 at surface, 0 at radius edge
+      const proximity = 1 - dist / radius;
 
-      // Orbital: strongest at middle distances
-      const orbitalFalloff = Math.sin(normalizedDist * Math.PI);
-      const orbitalAmount = orbitalFalloff * well.strength * orbitalStrength;
+      // Pull strength increases sharply near the surface (cubic falloff)
+      const pullFactor = proximity * proximity * proximity;
+      const pull = pullFactor * well.strength * pullStrength;
 
-      // Pull: only at outer edges, zero near center
-      const pullFalloff = Math.pow(normalizedDist, 0.5) * (1 - normalizedDist);
-      const pullAmount = pullFalloff * well.strength * pullStrength;
+      dx += dirX * pull;
+      dy += dirY * pull;
 
-      dx += tangentX * orbitalAmount - radialX * pullAmount;
-      dy += tangentY * orbitalAmount - radialY * pullAmount;
+      // Surface flow: once close, characters also drift downward along edges
+      // This creates the "streaming down the surface" look
+      if (proximity > 0.4) {
+        const flowAmount = (proximity - 0.4) / 0.6; // 0 at 0.4, 1 at 1.0
+        dy += flowAmount * flowAmount * surfaceFlowStrength * well.strength;
+      }
 
-      brightness = Math.max(brightness, pullFalloff * well.strength * 0.6);
+      // Brightness: characters glow as they approach the surface
+      const glow = proximity * proximity * well.strength;
+      brightness = Math.max(brightness, glow);
     }
 
     // Clamp offset
