@@ -2,30 +2,263 @@ import { useEffect, useRef } from "react";
 import { View, StyleSheet, Platform, useWindowDimensions } from "react-native";
 
 // =============================================================================
-// Configuration
-// =============================================================================
-
-const CONFIG = {
-  // Appearance
-  opacity: 0.45,
-  trailLength: 28,
-
-  // Rain mode (default)
-  secondsToTraverseScreen: 6,
-  rowsPerTick: 8,
-  speedEntropy: 0.3,
-};
-
-// =============================================================================
 // Helpers
 // =============================================================================
 
 const CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789$#!%";
 const randomChar = () => CHARSET[Math.floor(Math.random() * CHARSET.length)];
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // =============================================================================
-// Gravity Effect (Composable Module)
+// Particle System Types
+// =============================================================================
+
+/** Immutable identity of a particle — assigned once at creation. */
+export interface Particle {
+  index: number;
+  angle: number;   // radial identity for tunnel/spiral effects (0..2π)
+  col: number;     // column identity for rain (-1 = no column, fades out in rain)
+  speed: number;   // base speed multiplier (0.7..1.3)
+  phase: number;   // random offset for staggering (0..1)
+}
+
+/** Output of an Effect for one particle at one instant. */
+export interface ParticleFrame {
+  x: number;
+  y: number;
+  size: number;
+  brightness: number;
+  trailDx: number;         // x offset per trail segment (head → tail direction)
+  trailDy: number;         // y offset per trail segment
+  trailSizeDelta: number;  // size change per trail segment (negative = shrinking)
+}
+
+/**
+ * An Effect is a pure function that computes a particle's visual state
+ * from its identity + elapsed time + canvas dimensions.
+ * No side effects, no internal state — fully composable.
+ */
+export type Effect = (p: Particle, time: number, w: number, h: number) => ParticleFrame;
+
+/**
+ * A SceneDirector maps scroll position + time to the active Effect.
+ * This is how the consumer choreographs transitions.
+ */
+export type SceneDirector = (
+  scrollY: number,
+  time: number,
+  w: number,
+  h: number,
+) => Effect;
+
+// =============================================================================
+// Easings
+// =============================================================================
+
+export const easings = {
+  linear: (t: number) => t,
+  easeIn: (t: number) => t * t * t,
+  easeOut: (t: number) => 1 - Math.pow(1 - t, 3),
+  easeInOut: (t: number) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2,
+  smoothstep: (t: number) => t * t * (3 - 2 * t),
+};
+
+// =============================================================================
+// Effects Library
+// =============================================================================
+
+const ZERO_FRAME: ParticleFrame = {
+  x: -200, y: -200, size: 0, brightness: 0,
+  trailDx: 0, trailDy: 0, trailSizeDelta: 0,
+};
+
+/**
+ * Tunnel — radial rays from a central vanishing point.
+ * Characters spawn at center and fly outward with perspective scaling.
+ */
+const tunnelEffect: Effect = (p, time, w, h) => {
+  const cx = w / 2, cy = h / 2;
+  const maxR = Math.sqrt(cx * cx + cy * cy);
+
+  const cycleLen = 1.4;
+  const rawDepth = 0.18 * p.speed * time + p.phase * cycleLen;
+  const depth = rawDepth % cycleLen;
+
+  const dist = depth * maxR;
+  const x = cx + Math.cos(p.angle) * dist;
+  const y = cy + Math.sin(p.angle) * dist;
+
+  const trailStep = maxR * 0.025;
+
+  return {
+    x, y,
+    size: 6 + 18 * clamp(depth, 0, 1),
+    brightness: clamp(depth * depth * 1.2, 0, 1),
+    trailDx: -Math.cos(p.angle) * trailStep,
+    trailDy: -Math.sin(p.angle) * trailStep,
+    trailSizeDelta: -0.6,
+  };
+};
+
+/**
+ * Rain — classic vertical falling columns.
+ * Only particles with a column assignment (col >= 0) are visible.
+ */
+const rainEffect: Effect = (p, time, w, h) => {
+  if (p.col < 0) return ZERO_FRAME;
+
+  const cellSize = 18;
+  const numRows = Math.ceil(h / cellSize);
+  const trailLen = 20;
+  const totalDist = numRows + trailLen;
+  const rps = totalDist / 6;
+
+  const rawY = p.speed * rps * time + p.phase * totalDist;
+  const headRow = (rawY % totalDist) - trailLen;
+
+  return {
+    x: p.col * cellSize + cellSize / 2,
+    y: headRow * cellSize + cellSize / 2,
+    size: cellSize,
+    brightness: 0.85,
+    trailDx: 0,
+    trailDy: -cellSize,
+    trailSizeDelta: 0,
+  };
+};
+
+/**
+ * Spiral — tunnel with a rotating frame of reference.
+ * Same radial structure but the entire field slowly rotates.
+ */
+const spiralEffect: Effect = (p, time, w, h) => {
+  const cx = w / 2, cy = h / 2;
+  const maxR = Math.sqrt(cx * cx + cy * cy);
+
+  const cycleLen = 1.4;
+  const rawDepth = 0.14 * p.speed * time + p.phase * cycleLen;
+  const depth = rawDepth % cycleLen;
+
+  // Rotate the whole field over time
+  const rotatedAngle = p.angle + time * 0.3;
+  const dist = depth * maxR;
+  const x = cx + Math.cos(rotatedAngle) * dist;
+  const y = cy + Math.sin(rotatedAngle) * dist;
+
+  const trailStep = maxR * 0.025;
+  const cos = Math.cos(time * 0.3), sin = Math.sin(time * 0.3);
+  const baseDx = -Math.cos(p.angle) * trailStep;
+  const baseDy = -Math.sin(p.angle) * trailStep;
+
+  return {
+    x, y,
+    size: 6 + 18 * clamp(depth, 0, 1),
+    brightness: clamp(depth * depth * 1.2, 0, 1),
+    trailDx: baseDx * cos - baseDy * sin,
+    trailDy: baseDx * sin + baseDy * cos,
+    trailSizeDelta: -0.6,
+  };
+};
+
+/**
+ * Cascade — characters fall outward from center like a fountain,
+ * spreading horizontally as they descend.
+ */
+const cascadeEffect: Effect = (p, time, w, h) => {
+  const cx = w / 2;
+  const cycleLen = 1.6;
+  const rawT = 0.2 * p.speed * time + p.phase * cycleLen;
+  const t = rawT % cycleLen;
+
+  // Vertical: accelerate downward (gravity feel)
+  const y = t * t * h * 0.5;
+  // Horizontal: spread based on angle, increasing with fall distance
+  const spread = (Math.cos(p.angle) * 0.5) * t * w * 0.4;
+  const x = cx + spread;
+
+  const brightness = clamp((1 - t / cycleLen) * 1.2, 0, 1);
+
+  return {
+    x, y,
+    size: 10 + 10 * clamp(t, 0, 1),
+    brightness,
+    trailDx: -spread * 0.04,
+    trailDy: -t * h * 0.04,
+    trailSizeDelta: -0.3,
+  };
+};
+
+/**
+ * Converge — all characters pull inward toward center.
+ * Reverse of tunnel; characters spawn at edges and collapse inward.
+ */
+const convergeEffect: Effect = (p, time, w, h) => {
+  const cx = w / 2, cy = h / 2;
+  const maxR = Math.sqrt(cx * cx + cy * cy);
+
+  const cycleLen = 1.4;
+  const rawDepth = 0.18 * p.speed * time + p.phase * cycleLen;
+  const depth = 1.0 - (rawDepth % cycleLen) / cycleLen; // invert: 1→0
+
+  const dist = depth * maxR;
+  const x = cx + Math.cos(p.angle) * dist;
+  const y = cy + Math.sin(p.angle) * dist;
+
+  const trailStep = maxR * 0.025;
+
+  return {
+    x, y,
+    size: 6 + 18 * clamp(depth, 0, 1),
+    brightness: clamp((1 - depth) * (1 - depth) * 1.5, 0, 1),
+    trailDx: Math.cos(p.angle) * trailStep,
+    trailDy: Math.sin(p.angle) * trailStep,
+    trailSizeDelta: 0.4,
+  };
+};
+
+export const effects = {
+  tunnel: tunnelEffect,
+  rain: rainEffect,
+  spiral: spiralEffect,
+  cascade: cascadeEffect,
+  converge: convergeEffect,
+};
+
+// =============================================================================
+// Combinators
+// =============================================================================
+
+/** Linearly interpolate between two effects. */
+export function blend(a: Effect, b: Effect, t: number): Effect {
+  if (t <= 0) return a;
+  if (t >= 1) return b;
+  return (p, time, w, h) => {
+    const fa = a(p, time, w, h);
+    const fb = b(p, time, w, h);
+    return {
+      x: lerp(fa.x, fb.x, t),
+      y: lerp(fa.y, fb.y, t),
+      size: lerp(fa.size, fb.size, t),
+      brightness: lerp(fa.brightness, fb.brightness, t),
+      trailDx: lerp(fa.trailDx, fb.trailDx, t),
+      trailDy: lerp(fa.trailDy, fb.trailDy, t),
+      trailSizeDelta: lerp(fa.trailSizeDelta, fb.trailSizeDelta, t),
+    };
+  };
+}
+
+/** Apply an arbitrary transformation to an effect's output. */
+export function transform(
+  effect: Effect,
+  fn: (frame: ParticleFrame, p: Particle, time: number, w: number, h: number) => ParticleFrame,
+): Effect {
+  return (p, time, w, h) => fn(effect(p, time, w, h), p, time, w, h);
+}
+
+// =============================================================================
+// Gravity Effect (Post-processor)
 // =============================================================================
 
 export interface GravityWell {
@@ -52,105 +285,68 @@ export const DEFAULT_GRAVITY_CONFIG: GravityConfig = {
   smoothing: 0.12,
 };
 
-/**
- * Nearest point on an axis-aligned rectangle to a given point.
- */
 function nearestPointOnRect(
   px: number, py: number,
-  rx: number, ry: number, rw: number, rh: number
-): { nx: number; ny: number } {
-  return {
-    nx: clamp(px, rx, rx + rw),
-    ny: clamp(py, ry, ry + rh),
-  };
+  rx: number, ry: number, rw: number, rh: number,
+) {
+  return { nx: clamp(px, rx, rx + rw), ny: clamp(py, ry, ry + rh) };
 }
 
-/**
- * Creates a gravity calculator that pulls characters toward the card
- * surface from ALL directions. Characters accumulate on and flow along
- * card edges, getting brighter as they approach — like the Smith effect.
- */
 export function createGravityCalculator(config: GravityConfig) {
   const { radius, pullStrength, surfaceFlowStrength, maxOffset } = config;
 
   return function getGravityOffset(
-    x: number,
-    y: number,
-    wells: GravityWell[]
+    x: number, y: number, wells: GravityWell[],
   ): { dx: number; dy: number; brightness: number } {
-    let dx = 0;
-    let dy = 0;
-    let brightness = 0;
+    let dx = 0, dy = 0, brightness = 0;
 
     for (const well of wells) {
       if (well.strength < 0.01) continue;
 
-      // Find nearest point on the card rectangle
-      const { nx, ny } = nearestPointOnRect(
-        x, y, well.x, well.y, well.width, well.height
-      );
-
-      // Vector from character toward the nearest surface point
-      const toSurfX = nx - x;
-      const toSurfY = ny - y;
+      const { nx, ny } = nearestPointOnRect(x, y, well.x, well.y, well.width, well.height);
+      const toSurfX = nx - x, toSurfY = ny - y;
       const dist = Math.sqrt(toSurfX * toSurfX + toSurfY * toSurfY);
 
-      // Character is inside the card — flow downward along surface
       if (dist < 1) {
         dy += surfaceFlowStrength * well.strength * 0.5;
         brightness = Math.max(brightness, 0.85 * well.strength);
         continue;
       }
-
       if (dist > radius) continue;
 
-      // Normalized direction toward surface
-      const dirX = toSurfX / dist;
-      const dirY = toSurfY / dist;
-
-      // Proximity: 1 at surface, 0 at radius edge
+      const dirX = toSurfX / dist, dirY = toSurfY / dist;
       const proximity = 1 - dist / radius;
-
-      // Pull strength increases sharply near the surface (cubic falloff)
-      const pullFactor = proximity * proximity * proximity;
-      const pull = pullFactor * well.strength * pullStrength;
+      const pull = proximity * proximity * proximity * well.strength * pullStrength;
 
       dx += dirX * pull;
       dy += dirY * pull;
 
-      // Surface flow: once close, characters also drift downward along edges
-      // This creates the "streaming down the surface" look
       if (proximity > 0.4) {
-        const flowAmount = (proximity - 0.4) / 0.6; // 0 at 0.4, 1 at 1.0
-        dy += flowAmount * flowAmount * surfaceFlowStrength * well.strength;
+        const flow = (proximity - 0.4) / 0.6;
+        dy += flow * flow * surfaceFlowStrength * well.strength;
       }
 
-      // Brightness: characters glow as they approach the surface
-      const glow = proximity * proximity * well.strength;
-      brightness = Math.max(brightness, glow);
+      brightness = Math.max(brightness, proximity * proximity * well.strength);
     }
 
-    // Clamp offset
     const offsetDist = Math.sqrt(dx * dx + dy * dy);
     if (offsetDist > maxOffset) {
       dx = (dx / offsetDist) * maxOffset;
       dy = (dy / offsetDist) * maxOffset;
     }
-
     return { dx, dy, brightness };
   };
 }
 
 // =============================================================================
-// Shared Drawing
+// Drawing
 // =============================================================================
 
 function drawChar(
   ctx: CanvasRenderingContext2D,
-  x: number, y: number, char: string, size: number, brightness: number
+  x: number, y: number, char: string, size: number, brightness: number,
 ) {
   if (brightness <= 0.02 || size < 4) return;
-
   const alpha = clamp(brightness, 0, 1);
 
   if (brightness > 0.9) {
@@ -174,218 +370,24 @@ function drawChar(
 }
 
 // =============================================================================
-// Rain Mode (vertical columns with gravity)
+// Component
 // =============================================================================
 
-function initRainMode(
-  ctx: CanvasRenderingContext2D,
-  w: number, h: number,
-  gravityWellsRef: React.MutableRefObject<GravityWell[]>,
-  enableGravityRef: React.MutableRefObject<boolean>,
-  config: GravityConfig,
-  debug: boolean
-) {
-  const cellSize = 18;
-  const numCols = Math.ceil(w / cellSize);
-  const numRows = Math.ceil(h / cellSize);
-  const totalDistance = numRows + CONFIG.trailLength;
-  const rowsPerSecond = totalDistance / CONFIG.secondsToTraverseScreen;
-  const getGravityOffset = createGravityCalculator(config);
+const TRAIL_LENGTH = 20;
+const OPACITY = 0.5;
+const CHAR_TICK_RATE = 1.5;
 
-  interface Particle {
-    col: number;
-    y: number;
-    speed: number;
-    lastTickRow: number;
-    chars: string[];
-    offsets: { x: number; y: number }[];
-  }
-
-  const particles: Particle[] = [];
-  for (let col = 0; col < numCols; col++) {
-    particles.push({
-      col,
-      y: Math.random() * (numRows + CONFIG.trailLength),
-      speed: 1 + (Math.random() - 0.5) * 2 * CONFIG.speedEntropy,
-      lastTickRow: 0,
-      chars: Array.from({ length: CONFIG.trailLength }, () => randomChar()),
-      offsets: Array.from({ length: CONFIG.trailLength }, () => ({ x: 0, y: 0 })),
-    });
-  }
-
-  return function tick(deltaSeconds: number) {
-    const wells = gravityWellsRef.current;
-    const gravityEnabled = enableGravityRef.current;
-
-    for (const p of particles) {
-      p.y += rowsPerSecond * deltaSeconds * p.speed;
-
-      const tickRow = Math.floor(p.y / CONFIG.rowsPerTick);
-      if (tickRow !== p.lastTickRow) {
-        p.lastTickRow = tickRow;
-        for (let j = 0; j < CONFIG.trailLength; j++) {
-          p.chars[j] = randomChar();
-        }
-      }
-
-      if (p.y > numRows + CONFIG.trailLength) {
-        p.y = -CONFIG.trailLength;
-        p.speed = 1 + (Math.random() - 0.5) * 2 * CONFIG.speedEntropy;
-      }
-
-      const headRow = Math.floor(p.y);
-      const baseX = p.col * cellSize + cellSize / 2;
-
-      for (let t = CONFIG.trailLength - 1; t >= 0; t--) {
-        const row = headRow - t;
-        if (row < 0 || row >= numRows) continue;
-
-        const baseY = row * cellSize + cellSize / 2;
-        let brightness = 1 - t / CONFIG.trailLength;
-
-        if (gravityEnabled && wells.length > 0) {
-          const gravity = getGravityOffset(baseX, baseY, wells);
-          p.offsets[t].x += (gravity.dx - p.offsets[t].x) * config.smoothing;
-          p.offsets[t].y += (gravity.dy - p.offsets[t].y) * config.smoothing;
-          brightness = clamp(brightness + gravity.brightness, 0, 1);
-        } else {
-          p.offsets[t].x *= 0.95;
-          p.offsets[t].y *= 0.95;
-        }
-
-        drawChar(ctx, baseX + p.offsets[t].x, baseY + p.offsets[t].y, p.chars[t], cellSize, brightness);
-      }
-    }
-
-    // Debug
-    if (debug && wells.length > 0) {
-      for (const well of wells) {
-        ctx.strokeStyle = "#00ff00";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(well.x, well.y, well.width, well.height);
-      }
-    }
-  };
-}
-
-// =============================================================================
-// Parallax Mode (radial hallway effect)
-// =============================================================================
-
-const PARALLAX = {
-  numRays: 200,
-  trailLength: 12,
-  minDepth: 0.02,          // spawn close to vanishing point
-  maxDepth: 1.4,           // overshoot past screen edge for clean exit
-  baseSpeed: 0.15,         // base depth-per-second
-  speedEntropy: 0.4,
-  accelPower: 2.5,         // perspective acceleration exponent
-  minSize: 6,
-  maxSize: 24,
-  tickInterval: 0.08,      // seconds between char randomization
-};
-
-function initParallaxMode(
-  ctx: CanvasRenderingContext2D,
-  w: number, h: number
-) {
-  const cx = w / 2;
-  const cy = h / 2;
-  // Max distance from center to a corner — defines depth=1
-  const maxRadius = Math.sqrt(cx * cx + cy * cy);
-
-  interface Ray {
-    angle: number;       // radians — direction from vanishing point
-    depth: number;       // 0 = at vanishing point, 1 = at screen edge
-    speed: number;       // base speed multiplier
-    chars: string[];
-    lastTick: number;    // timestamp of last char shuffle
-  }
-
-  const rays: Ray[] = [];
-  for (let i = 0; i < PARALLAX.numRays; i++) {
-    rays.push({
-      angle: Math.random() * Math.PI * 2,
-      depth: PARALLAX.minDepth + Math.random() * (PARALLAX.maxDepth - PARALLAX.minDepth),
-      speed: 1 + (Math.random() - 0.5) * 2 * PARALLAX.speedEntropy,
-      chars: Array.from({ length: PARALLAX.trailLength }, () => randomChar()),
-      lastTick: 0,
-    });
-  }
-
-  return function tick(deltaSeconds: number) {
-    const dirX = new Float64Array(PARALLAX.numRays);
-    const dirY = new Float64Array(PARALLAX.numRays);
-
-    for (let i = 0; i < rays.length; i++) {
-      const r = rays[i];
-      dirX[i] = Math.cos(r.angle);
-      dirY[i] = Math.sin(r.angle);
-
-      // Accelerate with depth (perspective: things move faster as they approach)
-      const accel = Math.pow(Math.max(r.depth, 0.01), PARALLAX.accelPower);
-      r.depth += PARALLAX.baseSpeed * r.speed * accel * deltaSeconds;
-
-      // Randomize chars periodically
-      r.lastTick += deltaSeconds;
-      if (r.lastTick > PARALLAX.tickInterval) {
-        r.lastTick = 0;
-        for (let j = 0; j < PARALLAX.trailLength; j++) {
-          r.chars[j] = randomChar();
-        }
-      }
-
-      // Respawn when past screen edge
-      if (r.depth > PARALLAX.maxDepth) {
-        r.depth = PARALLAX.minDepth + Math.random() * 0.05;
-        r.angle = Math.random() * Math.PI * 2;
-        r.speed = 1 + (Math.random() - 0.5) * 2 * PARALLAX.speedEntropy;
-        dirX[i] = Math.cos(r.angle);
-        dirY[i] = Math.sin(r.angle);
-      }
-
-      // Draw trail (older segments are closer to center / smaller)
-      for (let t = PARALLAX.trailLength - 1; t >= 0; t--) {
-        const trailDepth = r.depth - t * 0.03;
-        if (trailDepth < 0) continue;
-
-        const dist = trailDepth * maxRadius;
-        const px = cx + dirX[i] * dist;
-        const py = cy + dirY[i] * dist;
-
-        // Off-screen cull
-        if (px < -30 || px > w + 30 || py < -30 || py > h + 30) continue;
-
-        // Perspective size: small at center, large at edges
-        const size = PARALLAX.minSize + (PARALLAX.maxSize - PARALLAX.minSize) * trailDepth;
-
-        // Brightness: dim near vanishing point, bright near edges
-        // Trail fade: head is brightest
-        const depthBrightness = trailDepth * trailDepth;
-        const trailFade = 1 - t / PARALLAX.trailLength;
-        const brightness = depthBrightness * trailFade;
-
-        drawChar(ctx, px, py, r.chars[t], size, brightness);
-      }
-    }
-  };
-}
-
-// =============================================================================
-// Main Component
-// =============================================================================
+const defaultScene: SceneDirector = () => rainEffect;
 
 interface MatrixRainProps {
-  /** Array of gravity wells that bend the matrix around them */
   gravityWells?: GravityWell[];
-  /** Enable/disable the gravity effect entirely */
   enableGravity?: boolean;
-  /** Custom gravity configuration */
   gravityConfig?: Partial<GravityConfig>;
-  /** Show debug visualization of gravity wells */
   debug?: boolean;
-  /** Render mode: "rain" (default) or "parallax" (hallway effect) */
-  mode?: "rain" | "parallax";
+  /** Scene director: maps (scrollY, time, w, h) → active Effect */
+  scene?: SceneDirector;
+  /** Current scroll position in pixels */
+  scrollY?: number;
 }
 
 export function MatrixRain({
@@ -393,22 +395,23 @@ export function MatrixRain({
   enableGravity = true,
   gravityConfig = {},
   debug = false,
-  mode = "rain",
+  scene,
+  scrollY = 0,
 }: MatrixRainProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { width, height } = useWindowDimensions();
+
+  // All reactive values go through refs — read in animation loop, no re-init
   const gravityWellsRef = useRef(gravityWells);
+  gravityWellsRef.current = gravityWells;
   const enableGravityRef = useRef(enableGravity);
-
-  const config = { ...DEFAULT_GRAVITY_CONFIG, ...gravityConfig };
-
-  useEffect(() => {
-    gravityWellsRef.current = gravityWells;
-  }, [gravityWells]);
-
-  useEffect(() => {
-    enableGravityRef.current = enableGravity;
-  }, [enableGravity]);
+  enableGravityRef.current = enableGravity;
+  const sceneRef = useRef(scene ?? defaultScene);
+  sceneRef.current = scene ?? defaultScene;
+  const scrollRef = useRef(scrollY);
+  scrollRef.current = scrollY;
+  const configRef = useRef({ ...DEFAULT_GRAVITY_CONFIG, ...gravityConfig });
+  configRef.current = { ...DEFAULT_GRAVITY_CONFIG, ...gravityConfig };
 
   useEffect(() => {
     if (Platform.OS !== "web" || !canvasRef.current) return;
@@ -420,39 +423,118 @@ export function MatrixRain({
     canvas.width = width;
     canvas.height = height;
 
-    // Initialize the appropriate render mode
-    const tickFn = mode === "parallax"
-      ? initParallaxMode(ctx, width, height)
-      : initRainMode(ctx, width, height, gravityWellsRef, enableGravityRef, config, debug);
+    // Particle count: enough for dense tunnel, column-assigned subset for rain
+    const cellSize = 18;
+    const numCols = Math.ceil(width / cellSize);
+    const numParticles = Math.max(numCols * 4, 200);
 
-    let animationId: number;
+    // Create particles
+    const particles: Particle[] = [];
+    const charBuffers: string[][] = [];
+    const gravOffsets: { x: number; y: number }[][] = [];
+    const lastCharTick = new Float64Array(numParticles);
+
+    for (let i = 0; i < numParticles; i++) {
+      particles.push({
+        index: i,
+        angle: (i / numParticles) * Math.PI * 2,
+        col: i < numCols ? i : -1,
+        speed: 0.7 + Math.random() * 0.6,
+        phase: Math.random(),
+      });
+      charBuffers.push(Array.from({ length: TRAIL_LENGTH }, () => randomChar()));
+      gravOffsets.push(Array.from({ length: TRAIL_LENGTH }, () => ({ x: 0, y: 0 })));
+    }
+
+    let animId: number;
     let lastTime = performance.now();
+    const startTime = lastTime;
 
     const loop = () => {
-      animationId = requestAnimationFrame(loop);
+      animId = requestAnimationFrame(loop);
+
       const now = performance.now();
-      const deltaSeconds = (now - lastTime) / 1000;
+      const dt = (now - lastTime) / 1000;
       lastTime = now;
+      if (dt > 0.1) return; // skip if tab was backgrounded
+
+      const elapsed = (now - startTime) / 1000;
 
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, width, height);
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
 
-      tickFn(deltaSeconds);
+      const currentEffect = sceneRef.current(scrollRef.current, elapsed, width, height);
+      const wells = gravityWellsRef.current;
+      const gravEnabled = enableGravityRef.current;
+      const config = configRef.current;
+      const getGravityOffset = createGravityCalculator(config);
+
+      for (let i = 0; i < numParticles; i++) {
+        const p = particles[i];
+        const frame = currentEffect(p, elapsed, width, height);
+
+        if (frame.brightness <= 0) continue;
+
+        // Randomize chars periodically
+        const charTick = Math.floor(elapsed * p.speed * CHAR_TICK_RATE);
+        if (charTick !== lastCharTick[i]) {
+          lastCharTick[i] = charTick;
+          for (let j = 0; j < TRAIL_LENGTH; j++) {
+            charBuffers[i][j] = randomChar();
+          }
+        }
+
+        // Draw trail segments (tail first, head last for correct overlap)
+        for (let t = TRAIL_LENGTH - 1; t >= 0; t--) {
+          const sx = frame.x + frame.trailDx * t;
+          const sy = frame.y + frame.trailDy * t;
+
+          if (sx < -40 || sx > width + 40 || sy < -40 || sy > height + 40) continue;
+
+          const sSize = Math.max(4, frame.size + frame.trailSizeDelta * t);
+          let sBright = frame.brightness * (1 - t / TRAIL_LENGTH);
+
+          let drawX = sx, drawY = sy;
+
+          if (gravEnabled && wells.length > 0) {
+            const grav = getGravityOffset(sx, sy, wells);
+            gravOffsets[i][t].x += (grav.dx - gravOffsets[i][t].x) * config.smoothing;
+            gravOffsets[i][t].y += (grav.dy - gravOffsets[i][t].y) * config.smoothing;
+            drawX += gravOffsets[i][t].x;
+            drawY += gravOffsets[i][t].y;
+            sBright = clamp(sBright + grav.brightness, 0, 1);
+          } else {
+            gravOffsets[i][t].x *= 0.95;
+            gravOffsets[i][t].y *= 0.95;
+            drawX += gravOffsets[i][t].x;
+            drawY += gravOffsets[i][t].y;
+          }
+
+          drawChar(ctx, drawX, drawY, charBuffers[i][t], sSize, sBright);
+        }
+      }
 
       ctx.shadowBlur = 0;
+
+      if (debug && wells.length > 0) {
+        for (const well of wells) {
+          ctx.strokeStyle = "#00ff00";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(well.x, well.y, well.width, well.height);
+        }
+      }
     };
 
-    animationId = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(animationId);
-
-  }, [width, height, mode, config.radius, config.pullStrength, config.maxOffset, config.smoothing, debug]);
+    animId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(animId);
+  }, [width, height]);
 
   if (Platform.OS !== "web") return null;
 
   return (
-    <View style={[styles.container, { opacity: CONFIG.opacity }]} pointerEvents="none">
+    <View style={[styles.container, { opacity: OPACITY }]} pointerEvents="none">
       <canvas
         ref={canvasRef as any}
         style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}

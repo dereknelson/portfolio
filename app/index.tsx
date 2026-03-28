@@ -8,10 +8,34 @@ import {
   Animated,
   StyleSheet,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { MatrixRain, GravityWell } from "./components/MatrixRain";
+import {
+  MatrixRain,
+  GravityWell,
+  SceneDirector,
+  effects,
+  blend,
+  easings,
+} from "./components/MatrixRain";
+
+// =============================================================================
+// Scene Choreography
+// =============================================================================
+
+const scene: SceneDirector = (scrollY, time, w, h) => {
+  // Hero: fly through the tunnel
+  if (scrollY < h * 0.15) return effects.tunnel;
+  // Collapse: tunnel breaks apart into rain columns
+  if (scrollY < h * 0.75) {
+    const t = easings.easeInOut((scrollY - h * 0.15) / (h * 0.6));
+    return blend(effects.tunnel, effects.rain, t);
+  }
+  // Content: vertical rain (gravity wells bend it around cards)
+  return effects.rain;
+};
 
 // =============================================================================
 // Data
@@ -404,17 +428,33 @@ function ProjectCard({
 // =============================================================================
 
 export default function Portfolio() {
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const headerAnim = useAnimatedValue(0);
   const underlineAnim = useAnimatedValue(300);
   const [gravityWells, setGravityWells] = useState<GravityWell[]>([]);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [showScrollHint, setShowScrollHint] = useState(true);
   const [cardAnimations, setCardAnimations] = useState<{ progress: number; direction: number }[]>(
-    experience.map((_, i) => ({ progress: i === 0 ? 1 : 0, direction: i % 2 === 0 ? 1 : -1 })) // First card visible, others hidden until they scroll into view
+    experience.map((_, i) => ({ progress: i === 0 ? 1 : 0, direction: i % 2 === 0 ? 1 : -1 }))
   );
   const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
   const experienceCardLayouts = useRef<{ y: number; height: number; width: number }[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const hasInitializedRef = useRef(false);
-  const currentScrollY = useRef(0); // Track current scroll for measurements
+  const currentScrollY = useRef(0);
+
+  // Scroll indicator pulse
+  const scrollHintAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scrollHintAnim, { toValue: 0.2, duration: 1200, useNativeDriver: true }),
+        Animated.timing(scrollHintAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+      ]),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
 
 
   // Handle card measurement - converts screen Y to content Y
@@ -479,10 +519,11 @@ export default function Portfolio() {
   const handleScroll = (e: any) => {
     const { contentOffset, layoutMeasurement } = e.nativeEvent;
     const scrollY = contentOffset.y;
-    currentScrollY.current = scrollY; // Track for measurements
+    currentScrollY.current = scrollY;
+    setScrollPosition(scrollY);
+    if (scrollY > 50 && showScrollHint) setShowScrollHint(false);
     const viewportHeight = layoutMeasurement.height;
     const viewportWidth = layoutMeasurement.width;
-    const timestamp = performance.now();
     setViewportSize({ width: viewportWidth, height: viewportHeight });
 
     const contentWidth = Math.min(viewportWidth, 800);
@@ -530,8 +571,10 @@ export default function Portfolio() {
       {/* Background */}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }]} />
 
-      {/* Matrix rain background with card gravity effect */}
+      {/* Matrix rain — scene transitions from tunnel to rain on scroll */}
       <MatrixRain
+        scene={scene}
+        scrollY={scrollPosition}
         gravityWells={gravityWells}
         enableGravity={true}
         debug={false}
@@ -545,67 +588,76 @@ export default function Portfolio() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          {/* Header */}
-          <Animated.View
-            style={[
-              styles.header,
-              {
-                opacity: headerAnim,
-                transform: [
-                  {
-                    translateY: headerAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [-30, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <Animated.Text
+          {/* Hero — full viewport, tunnel effect behind */}
+          <View style={[styles.hero, { minHeight: windowHeight }]}>
+            <Animated.View
               style={[
-                styles.name,
+                styles.header,
                 {
+                  opacity: headerAnim,
                   transform: [
                     {
-                      scale: headerAnim.interpolate({
+                      translateY: headerAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [0.9, 1],
+                        outputRange: [-30, 0],
                       }),
                     },
                   ],
                 },
               ]}
             >
-              Derek Nelson
-            </Animated.Text>
+              <Animated.Text
+                style={[
+                  styles.name,
+                  {
+                    transform: [
+                      {
+                        scale: headerAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.9, 1],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                Derek Nelson
+              </Animated.Text>
 
-            <Animated.View
-              style={[
-                styles.underline,
-                {
-                  opacity: underlineAnim,
-                  transform: [{ scaleX: underlineAnim }],
-                },
-              ]}
-            >
-              <LinearGradient
-                colors={["#3b82f6", "#60a5fa", "#3b82f6"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.underlineGradient}
-              />
+              <Animated.View
+                style={[
+                  styles.underline,
+                  {
+                    opacity: underlineAnim,
+                    transform: [{ scaleX: underlineAnim }],
+                  },
+                ]}
+              >
+                <LinearGradient
+                  colors={["#3b82f6", "#60a5fa", "#3b82f6"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.underlineGradient}
+                />
+              </Animated.View>
+
+              <View style={styles.locationRow}>
+                <View style={styles.statusDot} />
+                <Text style={styles.location}>Brooklyn, NY</Text>
+              </View>
+
+              <Pressable onPress={() => Linking.openURL("mailto:derek@rlvnt.io")}>
+                <Text style={styles.email}>derek@rlvnt.io</Text>
+              </Pressable>
             </Animated.View>
 
-            <View style={styles.locationRow}>
-              <View style={styles.statusDot} />
-              <Text style={styles.location}>Brooklyn, NY</Text>
-            </View>
-
-            <Pressable onPress={() => Linking.openURL("mailto:derek@rlvnt.io")}>
-              <Text style={styles.email}>derek@rlvnt.io</Text>
-            </Pressable>
-          </Animated.View>
+            {/* Scroll indicator */}
+            {showScrollHint && (
+              <Animated.View style={[styles.scrollHint, { opacity: scrollHintAnim }]}>
+                <Text style={styles.scrollHintText}>↓</Text>
+              </Animated.View>
+            )}
+          </View>
 
           {/* Skills */}
           <Section title="Skills" delay={300}>
@@ -666,9 +718,25 @@ const styles = StyleSheet.create({
     marginHorizontal: "auto",
     width: "100%",
   },
+  hero: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
   header: {
     alignItems: "center",
     marginBottom: 48,
+  },
+  scrollHint: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+  },
+  scrollHintText: {
+    fontSize: 28,
+    color: "#60a5fa",
+    ...(Platform.OS === "web" && {
+      textShadow: "0 0 15px rgba(96, 165, 250, 0.6)",
+    }),
   },
   name: {
     fontSize: 48,
