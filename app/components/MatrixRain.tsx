@@ -142,6 +142,236 @@ export function createGravityCalculator(config: GravityConfig) {
 }
 
 // =============================================================================
+// Shared Drawing
+// =============================================================================
+
+function drawChar(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, char: string, size: number, brightness: number
+) {
+  if (brightness <= 0.02 || size < 4) return;
+
+  const alpha = clamp(brightness, 0, 1);
+
+  if (brightness > 0.9) {
+    ctx.shadowColor = "#0f0";
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+  } else if (brightness > 0.6) {
+    ctx.shadowColor = "#0f0";
+    ctx.shadowBlur = 4;
+    ctx.fillStyle = `rgba(170, 255, 170, ${alpha})`;
+  } else if (brightness > 0.3) {
+    ctx.shadowBlur = 2;
+    ctx.fillStyle = `rgba(0, ${Math.floor(100 + brightness * 155)}, 0, ${alpha})`;
+  } else {
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = `rgba(0, ${Math.floor(50 + brightness * 100)}, 0, ${alpha})`;
+  }
+
+  ctx.font = `bold ${Math.round(size)}px monospace`;
+  ctx.fillText(char, x, y);
+}
+
+// =============================================================================
+// Rain Mode (vertical columns with gravity)
+// =============================================================================
+
+function initRainMode(
+  ctx: CanvasRenderingContext2D,
+  w: number, h: number,
+  gravityWellsRef: React.MutableRefObject<GravityWell[]>,
+  enableGravityRef: React.MutableRefObject<boolean>,
+  config: GravityConfig,
+  debug: boolean
+) {
+  const cellSize = 18;
+  const numCols = Math.ceil(w / cellSize);
+  const numRows = Math.ceil(h / cellSize);
+  const totalDistance = numRows + CONFIG.trailLength;
+  const rowsPerSecond = totalDistance / CONFIG.secondsToTraverseScreen;
+  const getGravityOffset = createGravityCalculator(config);
+
+  interface Particle {
+    col: number;
+    y: number;
+    speed: number;
+    lastTickRow: number;
+    chars: string[];
+    offsets: { x: number; y: number }[];
+  }
+
+  const particles: Particle[] = [];
+  for (let col = 0; col < numCols; col++) {
+    particles.push({
+      col,
+      y: Math.random() * (numRows + CONFIG.trailLength),
+      speed: 1 + (Math.random() - 0.5) * 2 * CONFIG.speedEntropy,
+      lastTickRow: 0,
+      chars: Array.from({ length: CONFIG.trailLength }, () => randomChar()),
+      offsets: Array.from({ length: CONFIG.trailLength }, () => ({ x: 0, y: 0 })),
+    });
+  }
+
+  return function tick(deltaSeconds: number) {
+    const wells = gravityWellsRef.current;
+    const gravityEnabled = enableGravityRef.current;
+
+    for (const p of particles) {
+      p.y += rowsPerSecond * deltaSeconds * p.speed;
+
+      const tickRow = Math.floor(p.y / CONFIG.rowsPerTick);
+      if (tickRow !== p.lastTickRow) {
+        p.lastTickRow = tickRow;
+        for (let j = 0; j < CONFIG.trailLength; j++) {
+          p.chars[j] = randomChar();
+        }
+      }
+
+      if (p.y > numRows + CONFIG.trailLength) {
+        p.y = -CONFIG.trailLength;
+        p.speed = 1 + (Math.random() - 0.5) * 2 * CONFIG.speedEntropy;
+      }
+
+      const headRow = Math.floor(p.y);
+      const baseX = p.col * cellSize + cellSize / 2;
+
+      for (let t = CONFIG.trailLength - 1; t >= 0; t--) {
+        const row = headRow - t;
+        if (row < 0 || row >= numRows) continue;
+
+        const baseY = row * cellSize + cellSize / 2;
+        let brightness = 1 - t / CONFIG.trailLength;
+
+        if (gravityEnabled && wells.length > 0) {
+          const gravity = getGravityOffset(baseX, baseY, wells);
+          p.offsets[t].x += (gravity.dx - p.offsets[t].x) * config.smoothing;
+          p.offsets[t].y += (gravity.dy - p.offsets[t].y) * config.smoothing;
+          brightness = clamp(brightness + gravity.brightness, 0, 1);
+        } else {
+          p.offsets[t].x *= 0.95;
+          p.offsets[t].y *= 0.95;
+        }
+
+        drawChar(ctx, baseX + p.offsets[t].x, baseY + p.offsets[t].y, p.chars[t], cellSize, brightness);
+      }
+    }
+
+    // Debug
+    if (debug && wells.length > 0) {
+      for (const well of wells) {
+        ctx.strokeStyle = "#00ff00";
+        ctx.lineWidth = 2;
+        ctx.strokeRect(well.x, well.y, well.width, well.height);
+      }
+    }
+  };
+}
+
+// =============================================================================
+// Parallax Mode (radial hallway effect)
+// =============================================================================
+
+const PARALLAX = {
+  numRays: 200,
+  trailLength: 12,
+  minDepth: 0.02,          // spawn close to vanishing point
+  maxDepth: 1.4,           // overshoot past screen edge for clean exit
+  baseSpeed: 0.15,         // base depth-per-second
+  speedEntropy: 0.4,
+  accelPower: 2.5,         // perspective acceleration exponent
+  minSize: 6,
+  maxSize: 24,
+  tickInterval: 0.08,      // seconds between char randomization
+};
+
+function initParallaxMode(
+  ctx: CanvasRenderingContext2D,
+  w: number, h: number
+) {
+  const cx = w / 2;
+  const cy = h / 2;
+  // Max distance from center to a corner — defines depth=1
+  const maxRadius = Math.sqrt(cx * cx + cy * cy);
+
+  interface Ray {
+    angle: number;       // radians — direction from vanishing point
+    depth: number;       // 0 = at vanishing point, 1 = at screen edge
+    speed: number;       // base speed multiplier
+    chars: string[];
+    lastTick: number;    // timestamp of last char shuffle
+  }
+
+  const rays: Ray[] = [];
+  for (let i = 0; i < PARALLAX.numRays; i++) {
+    rays.push({
+      angle: Math.random() * Math.PI * 2,
+      depth: PARALLAX.minDepth + Math.random() * (PARALLAX.maxDepth - PARALLAX.minDepth),
+      speed: 1 + (Math.random() - 0.5) * 2 * PARALLAX.speedEntropy,
+      chars: Array.from({ length: PARALLAX.trailLength }, () => randomChar()),
+      lastTick: 0,
+    });
+  }
+
+  return function tick(deltaSeconds: number) {
+    const dirX = new Float64Array(PARALLAX.numRays);
+    const dirY = new Float64Array(PARALLAX.numRays);
+
+    for (let i = 0; i < rays.length; i++) {
+      const r = rays[i];
+      dirX[i] = Math.cos(r.angle);
+      dirY[i] = Math.sin(r.angle);
+
+      // Accelerate with depth (perspective: things move faster as they approach)
+      const accel = Math.pow(Math.max(r.depth, 0.01), PARALLAX.accelPower);
+      r.depth += PARALLAX.baseSpeed * r.speed * accel * deltaSeconds;
+
+      // Randomize chars periodically
+      r.lastTick += deltaSeconds;
+      if (r.lastTick > PARALLAX.tickInterval) {
+        r.lastTick = 0;
+        for (let j = 0; j < PARALLAX.trailLength; j++) {
+          r.chars[j] = randomChar();
+        }
+      }
+
+      // Respawn when past screen edge
+      if (r.depth > PARALLAX.maxDepth) {
+        r.depth = PARALLAX.minDepth + Math.random() * 0.05;
+        r.angle = Math.random() * Math.PI * 2;
+        r.speed = 1 + (Math.random() - 0.5) * 2 * PARALLAX.speedEntropy;
+        dirX[i] = Math.cos(r.angle);
+        dirY[i] = Math.sin(r.angle);
+      }
+
+      // Draw trail (older segments are closer to center / smaller)
+      for (let t = PARALLAX.trailLength - 1; t >= 0; t--) {
+        const trailDepth = r.depth - t * 0.03;
+        if (trailDepth < 0) continue;
+
+        const dist = trailDepth * maxRadius;
+        const px = cx + dirX[i] * dist;
+        const py = cy + dirY[i] * dist;
+
+        // Off-screen cull
+        if (px < -30 || px > w + 30 || py < -30 || py > h + 30) continue;
+
+        // Perspective size: small at center, large at edges
+        const size = PARALLAX.minSize + (PARALLAX.maxSize - PARALLAX.minSize) * trailDepth;
+
+        // Brightness: dim near vanishing point, bright near edges
+        // Trail fade: head is brightest
+        const depthBrightness = trailDepth * trailDepth;
+        const trailFade = 1 - t / PARALLAX.trailLength;
+        const brightness = depthBrightness * trailFade;
+
+        drawChar(ctx, px, py, r.chars[t], size, brightness);
+      }
+    }
+  };
+}
+
+// =============================================================================
 // Main Component
 // =============================================================================
 
@@ -154,6 +384,8 @@ interface MatrixRainProps {
   gravityConfig?: Partial<GravityConfig>;
   /** Show debug visualization of gravity wells */
   debug?: boolean;
+  /** Render mode: "rain" (default) or "parallax" (hallway effect) */
+  mode?: "rain" | "parallax";
 }
 
 export function MatrixRain({
@@ -161,13 +393,13 @@ export function MatrixRain({
   enableGravity = true,
   gravityConfig = {},
   debug = false,
+  mode = "rain",
 }: MatrixRainProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { width, height } = useWindowDimensions();
   const gravityWellsRef = useRef(gravityWells);
   const enableGravityRef = useRef(enableGravity);
 
-  // Merge custom config with defaults
   const config = { ...DEFAULT_GRAVITY_CONFIG, ...gravityConfig };
 
   useEffect(() => {
@@ -188,175 +420,34 @@ export function MatrixRain({
     canvas.width = width;
     canvas.height = height;
 
-    const cellSize = 18;
-    const numCols = Math.ceil(width / cellSize);
-    const numRows = Math.ceil(height / cellSize);
+    // Initialize the appropriate render mode
+    const tickFn = mode === "parallax"
+      ? initParallaxMode(ctx, width, height)
+      : initRainMode(ctx, width, height, gravityWellsRef, enableGravityRef, config, debug);
 
-    const totalDistance = numRows + CONFIG.trailLength;
-    const rowsPerSecond = totalDistance / CONFIG.secondsToTraverseScreen;
-
-    // Create gravity calculator
-    const getGravityOffset = createGravityCalculator(config);
-
-    // ===================
-    // Particles
-    // ===================
-    interface Particle {
-      col: number;
-      y: number;
-      speed: number;
-      lastTickRow: number;
-      chars: string[];
-      offsets: { x: number; y: number }[];
-    }
-
-    const particles: Particle[] = [];
-    for (let col = 0; col < numCols; col++) {
-      particles.push({
-        col,
-        y: Math.random() * (numRows + CONFIG.trailLength),
-        speed: 1 + (Math.random() - 0.5) * 2 * CONFIG.speedEntropy,
-        lastTickRow: 0,
-        chars: Array.from({ length: CONFIG.trailLength }, () => randomChar()),
-        offsets: Array.from({ length: CONFIG.trailLength }, () => ({ x: 0, y: 0 })),
-      });
-    }
-
-    // ===================
-    // Drawing
-    // ===================
-    function drawChar(x: number, y: number, char: string, size: number, brightness: number) {
-      if (brightness <= 0.02 || size < 4) return;
-
-      const alpha = clamp(brightness, 0, 1);
-
-      if (brightness > 0.9) {
-        ctx.shadowColor = "#0f0";
-        ctx.shadowBlur = 8;
-        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
-      } else if (brightness > 0.6) {
-        ctx.shadowColor = "#0f0";
-        ctx.shadowBlur = 4;
-        ctx.fillStyle = `rgba(170, 255, 170, ${alpha})`;
-      } else if (brightness > 0.3) {
-        ctx.shadowBlur = 2;
-        ctx.fillStyle = `rgba(0, ${Math.floor(100 + brightness * 155)}, 0, ${alpha})`;
-      } else {
-        ctx.shadowBlur = 0;
-        ctx.fillStyle = `rgba(0, ${Math.floor(50 + brightness * 100)}, 0, ${alpha})`;
-      }
-
-      ctx.font = `bold ${Math.round(size)}px monospace`;
-      ctx.fillText(char, x, y);
-    }
-
-    // ===================
-    // Debug Drawing
-    // ===================
-    function drawDebug(wells: GravityWell[]) {
-      for (const well of wells) {
-        const edgeX = well.x;
-        const centerY = well.y + well.height / 2;
-
-        // Gravity point
-        ctx.fillStyle = "#ff0000";
-        ctx.beginPath();
-        ctx.arc(edgeX, centerY, 15, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Radius arc
-        ctx.strokeStyle = "#ff0000";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(edgeX, centerY, config.radius, Math.PI * 0.5, Math.PI * 1.5);
-        ctx.stroke();
-
-        // Well bounds
-        ctx.strokeStyle = "#00ff00";
-        ctx.lineWidth = 2;
-        ctx.strokeRect(well.x, well.y, well.width, well.height);
-      }
-    }
-
-    // ===================
-    // Animation
-    // ===================
     let animationId: number;
     let lastTime = performance.now();
 
-    const tick = () => {
-      animationId = requestAnimationFrame(tick);
-
+    const loop = () => {
+      animationId = requestAnimationFrame(loop);
       const now = performance.now();
       const deltaSeconds = (now - lastTime) / 1000;
       lastTime = now;
 
-      // Clear
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, width, height);
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
 
-      const wells = gravityWellsRef.current;
-      const gravityEnabled = enableGravityRef.current;
-
-      // Update and draw particles
-      for (const p of particles) {
-        p.y += rowsPerSecond * deltaSeconds * p.speed;
-
-        const tickRow = Math.floor(p.y / CONFIG.rowsPerTick);
-        if (tickRow !== p.lastTickRow) {
-          p.lastTickRow = tickRow;
-          for (let j = 0; j < CONFIG.trailLength; j++) {
-            p.chars[j] = randomChar();
-          }
-        }
-
-        if (p.y > numRows + CONFIG.trailLength) {
-          p.y = -CONFIG.trailLength;
-          p.speed = 1 + (Math.random() - 0.5) * 2 * CONFIG.speedEntropy;
-        }
-
-        const headRow = Math.floor(p.y);
-        const baseX = p.col * cellSize + cellSize / 2;
-
-        for (let t = CONFIG.trailLength - 1; t >= 0; t--) {
-          const row = headRow - t;
-          if (row < 0 || row >= numRows) continue;
-
-          const baseY = row * cellSize + cellSize / 2;
-          let brightness = 1 - t / CONFIG.trailLength;
-
-          // Apply gravity effect if enabled
-          if (gravityEnabled && wells.length > 0) {
-            const gravity = getGravityOffset(baseX, baseY, wells);
-
-            p.offsets[t].x += (gravity.dx - p.offsets[t].x) * config.smoothing;
-            p.offsets[t].y += (gravity.dy - p.offsets[t].y) * config.smoothing;
-
-            brightness = clamp(brightness + gravity.brightness, 0, 1);
-          } else {
-            // Decay offsets when gravity is disabled
-            p.offsets[t].x *= 0.95;
-            p.offsets[t].y *= 0.95;
-          }
-
-          drawChar(baseX + p.offsets[t].x, baseY + p.offsets[t].y, p.chars[t], cellSize, brightness);
-        }
-      }
+      tickFn(deltaSeconds);
 
       ctx.shadowBlur = 0;
-
-      // Debug visualization
-      if (debug && wells.length > 0) {
-        drawDebug(wells);
-      }
     };
 
-    animationId = requestAnimationFrame(tick);
+    animationId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationId);
 
-  }, [width, height, config.radius, config.orbitalStrength, config.pullStrength, config.maxOffset, config.smoothing, debug]);
+  }, [width, height, mode, config.radius, config.pullStrength, config.maxOffset, config.smoothing, debug]);
 
   if (Platform.OS !== "web") return null;
 
