@@ -270,9 +270,11 @@ function ExperienceCard({
   const effectiveProgress = index === 0 ? 1 : scrollProgress;
 
   // Slide animation - cards come in from left or right based on direction
+  // Use a smaller slide on narrow screens to avoid hiding content
+  const slideFactor = viewportWidth < 500 ? 0.03 : 0.08;
   const slideDistance = direction === -1
-    ? -viewportWidth * 0.08
-    : viewportWidth * 0.08;
+    ? -viewportWidth * slideFactor
+    : viewportWidth * slideFactor;
 
   const translateX = (1 - effectiveProgress) * slideDistance;
   const opacity = effectiveProgress;
@@ -451,26 +453,26 @@ export default function Portfolio() {
   // Clamp value between 0 and 1
   const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
 
-  // Calculate progress based on scroll position
-  // Cards animate in sequentially as you scroll
-  const SCROLL_PER_CARD = 250; // Each card takes 250px of scroll to animate
+  // Calculate progress based on card's position in the viewport.
+  // Cards animate in when they scroll into view, not based on cumulative scroll.
+  const REVEAL_DISTANCE = 150; // px of scroll after entering viewport to fully reveal
 
   const getCardProgress = (
-    scrollY: number,
+    cardScreenY: number,
+    viewportHeight: number,
     cardIndex: number
   ): number => {
     // First card is always fully visible
     if (cardIndex === 0) return 1;
 
-    // Each subsequent card animates over SCROLL_PER_CARD pixels
-    // Card 1: scrollY 0-250, Card 2: scrollY 250-500, etc.
-    const cardStartScroll = (cardIndex - 1) * SCROLL_PER_CARD;
-    const cardEndScroll = cardIndex * SCROLL_PER_CARD;
+    // Card starts animating when its top enters the bottom of the viewport
+    // and is fully visible after scrolling REVEAL_DISTANCE further
+    const distanceIntoViewport = viewportHeight - cardScreenY;
 
-    if (scrollY <= cardStartScroll) return 0;
-    if (scrollY >= cardEndScroll) return 1;
+    if (distanceIntoViewport <= 0) return 0;
+    if (distanceIntoViewport >= REVEAL_DISTANCE) return 1;
 
-    const progress = (scrollY - cardStartScroll) / SCROLL_PER_CARD;
+    const progress = distanceIntoViewport / REVEAL_DISTANCE;
     return ease(clamp01(progress));
   };
 
@@ -561,8 +563,8 @@ export default function Portfolio() {
       // Calculate card's position relative to viewport (top of viewport = 0)
       const cardScreenY = cardData ? cardData.y - scrollY : viewportHeight + 100;
 
-      // Calculate progress based on scroll position (sequential animation)
-      const progress = getCardProgress(scrollY, index);
+      // Calculate progress based on viewport position
+      const progress = getCardProgress(cardScreenY, viewportHeight, index);
 
       newAnimations.push({ progress, direction });
 
@@ -576,7 +578,8 @@ export default function Portfolio() {
         const cardWidth = cardData.width || contentWidth - 48;
 
         // Calculate the card's current X position based on slide animation
-        const slideDistance = direction === -1 ? -viewportWidth * 0.08 : viewportWidth * 0.08;
+        const gravSlideFactor = viewportWidth < 500 ? 0.03 : 0.08;
+        const slideDistance = direction === -1 ? -viewportWidth * gravSlideFactor : viewportWidth * gravSlideFactor;
         const slideOffset = (1 - progress) * slideDistance;
         const cardCenterX = viewportWidth / 2 + slideOffset;
 
