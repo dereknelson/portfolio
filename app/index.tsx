@@ -270,11 +270,9 @@ function ExperienceCard({
   const effectiveProgress = index === 0 ? 1 : scrollProgress;
 
   // Slide animation - cards come in from left or right based on direction
-  // Use a smaller slide on narrow screens to avoid hiding content
-  const slideFactor = viewportWidth < 500 ? 0.03 : 0.08;
   const slideDistance = direction === -1
-    ? -viewportWidth * slideFactor
-    : viewportWidth * slideFactor;
+    ? -viewportWidth * 0.08
+    : viewportWidth * 0.08;
 
   const translateX = (1 - effectiveProgress) * slideDistance;
   const opacity = effectiveProgress;
@@ -407,6 +405,7 @@ export default function Portfolio() {
   const headerAnim = useAnimatedValue(0);
   const underlineAnim = useAnimatedValue(300);
   const [gravityWells, setGravityWells] = useState<GravityWell[]>([]);
+  const prevCardPositions = useRef<Record<string, { x: number; y: number; timestamp: number }>>({});
   const [cardAnimations, setCardAnimations] = useState<{ progress: number; direction: number }[]>(
     experience.map((_, i) => ({ progress: i === 0 ? 1 : 0, direction: i % 2 === 0 ? 1 : -1 })) // First card visible, others hidden until they scroll into view
   );
@@ -452,27 +451,92 @@ export default function Portfolio() {
   // Clamp value between 0 and 1
   const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
 
-  // Calculate progress based on card's position in the viewport.
-  // Cards animate in when they scroll into view, not based on cumulative scroll.
-  const REVEAL_DISTANCE = 150; // px of scroll after entering viewport to fully reveal
+  // Calculate progress based on scroll position
+  // Cards animate in sequentially as you scroll
+  const SCROLL_PER_CARD = 250; // Each card takes 250px of scroll to animate
 
   const getCardProgress = (
-    cardScreenY: number,
-    viewportHeight: number,
+    scrollY: number,
     cardIndex: number
   ): number => {
     // First card is always fully visible
     if (cardIndex === 0) return 1;
 
-    // Card starts animating when its top enters the bottom of the viewport
-    // and is fully visible after scrolling REVEAL_DISTANCE further
-    const distanceIntoViewport = viewportHeight - cardScreenY;
+    // Each subsequent card animates over SCROLL_PER_CARD pixels
+    // Card 1: scrollY 0-250, Card 2: scrollY 250-500, etc.
+    const cardStartScroll = (cardIndex - 1) * SCROLL_PER_CARD;
+    const cardEndScroll = cardIndex * SCROLL_PER_CARD;
 
-    if (distanceIntoViewport <= 0) return 0;
-    if (distanceIntoViewport >= REVEAL_DISTANCE) return 1;
+    if (scrollY <= cardStartScroll) return 0;
+    if (scrollY >= cardEndScroll) return 1;
 
-    const progress = distanceIntoViewport / REVEAL_DISTANCE;
+    const progress = (scrollY - cardStartScroll) / SCROLL_PER_CARD;
     return ease(clamp01(progress));
+  };
+
+  // Calculate card bounds for gravity effect, including velocity
+  // Now creates gravity wells for ALL visible cards, not just animating ones
+  const getCardBounds = (
+    progress: number,
+    direction: number,
+    cardScreenY: number,
+    cardWidth: number,
+    cardHeight: number,
+    viewportWidth: number,
+    viewportHeight: number,
+    timestamp: number,
+    cardIndex: number
+  ) => {
+    // Skip if card is not visible at all (fully off-screen)
+    if (progress <= 0) return null;
+
+    // Skip if card is off-screen vertically
+    if (cardScreenY + cardHeight < -100 || cardScreenY > viewportHeight + 100) return null;
+
+    const slideDistance = direction === -1 ? -viewportWidth * 0.2 : viewportWidth * 0.2;
+    const slideOffset = (1 - progress) * slideDistance;
+    const cardCenterX = viewportWidth / 2 + slideOffset;
+    const cardX = cardCenterX - cardWidth / 2;
+
+    // Calculate velocity from previous position
+    let velocityX = 0;
+    let velocityY = 0;
+
+    // Use per-card velocity tracking
+    const prevKey = `card_${cardIndex}`;
+    const prev = prevCardPositions.current[prevKey];
+    if (prev) {
+      const deltaTime = (timestamp - prev.timestamp) / 1000;
+      if (deltaTime > 0 && deltaTime < 0.1) {
+        velocityX = (cardX - prev.x) / deltaTime;
+        velocityY = (cardScreenY - prev.y) / deltaTime;
+        velocityX = Math.max(-2000, Math.min(2000, velocityX));
+        velocityY = Math.max(-2000, Math.min(2000, velocityY));
+      }
+    }
+    prevCardPositions.current[prevKey] = { x: cardX, y: cardScreenY, timestamp };
+
+    // Strength calculation:
+    // - During animation (0 < progress < 1): peaks at 50% progress
+    // - When fully visible (progress = 1): constant moderate strength
+    let strength: number;
+    if (progress >= 0.99) {
+      // Fully visible card - constant gravity well
+      strength = 1.5;
+    } else {
+      // Animating card - stronger effect that peaks at 50%
+      strength = progress * (1 - progress) * 8;
+    }
+
+    return {
+      x: cardX,
+      y: cardScreenY,
+      width: cardWidth,
+      height: cardHeight,
+      strength,
+      velocityX,
+      velocityY,
+    };
   };
 
   // Main scroll handler
@@ -488,7 +552,8 @@ export default function Portfolio() {
     const contentWidth = Math.min(viewportWidth, 800);
 
     const newAnimations: { progress: number; direction: number }[] = [];
-    const newGravityWells: GravityWell[] = [];
+    let activeGravityWell: GravityWell | null = null;
+    let lastVisibleCardIndex = 0;
 
     experienceCardLayouts.current.forEach((cardData, index) => {
       const direction = index % 2 === 0 ? 1 : -1;
@@ -496,33 +561,56 @@ export default function Portfolio() {
       // Calculate card's position relative to viewport (top of viewport = 0)
       const cardScreenY = cardData ? cardData.y - scrollY : viewportHeight + 100;
 
-      // Calculate progress based on viewport position
-      const progress = getCardProgress(cardScreenY, viewportHeight, index);
+      // Calculate progress based on scroll position (sequential animation)
+      const progress = getCardProgress(scrollY, index);
 
       newAnimations.push({ progress, direction });
 
-      // Create gravity well for every visible card on screen
-      if (cardData && progress > 0) {
+      // Track the last card that's at least partially visible
+      if (progress > 0) {
+        lastVisibleCardIndex = index;
+      }
+
+      // Create gravity well for the card that's currently animating
+      if (cardData && !activeGravityWell && progress > 0.01 && progress < 0.99) {
         const cardWidth = cardData.width || contentWidth - 48;
-        const gravSlideFactor = viewportWidth < 500 ? 0.03 : 0.08;
-        const slideDistance = direction === -1 ? -viewportWidth * gravSlideFactor : viewportWidth * gravSlideFactor;
+
+        // Calculate the card's current X position based on slide animation
+        const slideDistance = direction === -1 ? -viewportWidth * 0.08 : viewportWidth * 0.08;
         const slideOffset = (1 - progress) * slideDistance;
         const cardCenterX = viewportWidth / 2 + slideOffset;
 
-        // Pad the well slightly so characters accumulate around edges
-        const pad = 20;
-        newGravityWells.push({
-          x: cardCenterX - cardWidth / 2 - pad,
-          y: cardScreenY - pad,
-          width: cardWidth + pad * 2,
-          height: cardData.height + pad * 2,
-          strength: progress >= 0.99 ? 1.2 : progress,
-        });
+        activeGravityWell = {
+          x: cardCenterX - cardWidth / 2,
+          y: cardScreenY,
+          width: cardWidth,
+          height: cardData.height,
+          strength: 1,
+        };
       }
     });
 
+    // If no card is currently animating, keep gravity well at the last visible card
+    if (!activeGravityWell && lastVisibleCardIndex > 0) {
+      const cardData = experienceCardLayouts.current[lastVisibleCardIndex];
+      if (cardData) {
+        const direction = lastVisibleCardIndex % 2 === 0 ? 1 : -1;
+        const cardScreenY = cardData.y - scrollY;
+        const cardWidth = cardData.width || contentWidth - 48;
+        const cardCenterX = viewportWidth / 2; // Centered since fully visible
+
+        activeGravityWell = {
+          x: cardCenterX - cardWidth / 2,
+          y: cardScreenY,
+          width: cardWidth,
+          height: cardData.height,
+          strength: 0.8,
+        };
+      }
+    }
+
     setCardAnimations(newAnimations);
-    setGravityWells(newGravityWells);
+    setGravityWells(activeGravityWell ? [activeGravityWell] : []);
   };
 
   return (
@@ -604,6 +692,24 @@ export default function Portfolio() {
 
             <Pressable onPress={() => Linking.openURL("mailto:derek@rlvnt.io")}>
               <Text style={styles.email}>derek@rlvnt.io</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => Linking.openURL("https://github.com/dereknelson")}
+              style={styles.githubLink}
+            >
+              {Platform.OS === "web" ? (
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="#94a3b8"
+                >
+                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                </svg>
+              ) : (
+                <Text style={styles.githubFallback}>GitHub</Text>
+              )}
             </Pressable>
           </Animated.View>
 
@@ -714,6 +820,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#60a5fa",
     marginTop: 4,
+  },
+  githubLink: {
+    marginTop: 12,
+    padding: 8,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "rgba(80, 80, 80, 0.5)",
+    ...(Platform.OS === "web" && {
+      cursor: "pointer",
+      transition: "border-color 0.2s",
+    }),
+  },
+  githubFallback: {
+    fontSize: 14,
+    color: "#94a3b8",
   },
   section: {
     marginBottom: 48,
