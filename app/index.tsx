@@ -273,9 +273,6 @@ function ExperienceCard({
   bullets,
   index,
   onMeasure,
-  scrollProgress = 0,
-  direction = 1,
-  viewportWidth = 800,
 }: {
   company: string;
   role: string;
@@ -283,51 +280,22 @@ function ExperienceCard({
   bullets: string[];
   index: number;
   onMeasure?: (index: number, screenY: number, height: number, width: number) => void;
-  scrollProgress?: number;
-  direction?: number;
-  viewportWidth?: number;
 }) {
   const [hovered, setHovered] = useState(false);
   const viewRef = useRef<View>(null);
 
-  // First card is always visible, others slide in from sides
-  const effectiveProgress = index === 0 ? 1 : scrollProgress;
-
-  // Slide animation - cards come in from left or right based on direction
-  // Use a smaller slide on narrow screens to avoid hiding content
-  const slideFactor = viewportWidth < 500 ? 0.03 : 0.08;
-  const slideDistance = direction === -1
-    ? -viewportWidth * slideFactor
-    : viewportWidth * slideFactor;
-
-  const translateX = (1 - effectiveProgress) * slideDistance;
-  const opacity = effectiveProgress;
-  const scale = 0.85 + effectiveProgress * 0.15;
-
   return (
     <View
       ref={viewRef}
-      style={{
-        opacity,
-        transform: [
-          { translateX: translateX + (hovered ? 8 * -direction : 0) },
-          { scale },
-        ],
-      }}
       onLayout={() => {
         if (onMeasure && Platform.OS === "web" && viewRef.current) {
-          // Delay to ensure AnimatedSection translateY animation completes
           setTimeout(() => {
             const element = viewRef.current as unknown as HTMLElement;
             if (element && element.getBoundingClientRect) {
               const rect = element.getBoundingClientRect();
-              // rect.top is screen Y; convert to content Y by adding current scroll
-              // Since we're inside ScrollView, we need to track scroll separately
-              // For now, store screen Y and handle in scroll handler
-              console.log(`Card ${index} measured: top=${rect.top}, height=${rect.height}`);
               onMeasure(index, rect.top, rect.height, rect.width);
             }
-          }, 600); // Wait for animations to settle
+          }, 600);
         }
       }}
     >
@@ -434,9 +402,6 @@ export default function Portfolio() {
   const [gravityWells, setGravityWells] = useState<GravityWell[]>([]);
   const [scrollPosition, setScrollPosition] = useState(0);
   const [showScrollHint, setShowScrollHint] = useState(true);
-  const [cardAnimations, setCardAnimations] = useState<{ progress: number; direction: number }[]>(
-    experience.map((_, i) => ({ progress: i === 0 ? 1 : 0, direction: i % 2 === 0 ? 1 : -1 }))
-  );
   const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
   const experienceCardLayouts = useRef<{ y: number; height: number; width: number }[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -482,39 +447,6 @@ export default function Portfolio() {
     }
   };
 
-  // ==========================================
-  // Animation Functions (discrete, composable)
-  // ==========================================
-
-  // Easing function
-  const ease = (t: number) => t * t * (3 - 2 * t);
-
-  // Clamp value between 0 and 1
-  const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
-
-  // Calculate progress based on card's position in the viewport.
-  // Cards animate in when they scroll into view, not based on cumulative scroll.
-  const REVEAL_DISTANCE = 150; // px of scroll after entering viewport to fully reveal
-
-  const getCardProgress = (
-    cardScreenY: number,
-    viewportHeight: number,
-    cardIndex: number
-  ): number => {
-    // First card is always fully visible
-    if (cardIndex === 0) return 1;
-
-    // Card starts animating when its top enters the bottom of the viewport
-    // and is fully visible after scrolling REVEAL_DISTANCE further
-    const distanceIntoViewport = viewportHeight - cardScreenY;
-
-    if (distanceIntoViewport <= 0) return 0;
-    if (distanceIntoViewport >= REVEAL_DISTANCE) return 1;
-
-    const progress = distanceIntoViewport / REVEAL_DISTANCE;
-    return ease(clamp01(progress));
-  };
-
   // Main scroll handler
   const handleScroll = (e: any) => {
     const { contentOffset, layoutMeasurement } = e.nativeEvent;
@@ -527,42 +459,27 @@ export default function Portfolio() {
     setViewportSize({ width: viewportWidth, height: viewportHeight });
 
     const contentWidth = Math.min(viewportWidth, 800);
-
-    const newAnimations: { progress: number; direction: number }[] = [];
     const newGravityWells: GravityWell[] = [];
 
     experienceCardLayouts.current.forEach((cardData, index) => {
-      const direction = index % 2 === 0 ? 1 : -1;
+      if (!cardData) return;
 
-      // Calculate card's position relative to viewport (top of viewport = 0)
-      const cardScreenY = cardData ? cardData.y - scrollY : viewportHeight + 100;
+      const cardScreenY = cardData.y - scrollY;
+      // Only create gravity wells for cards that are on screen
+      if (cardScreenY + cardData.height < -100 || cardScreenY > viewportHeight + 100) return;
 
-      // Calculate progress based on viewport position
-      const progress = getCardProgress(cardScreenY, viewportHeight, index);
-
-      newAnimations.push({ progress, direction });
-
-      // Create gravity well for every visible card on screen
-      if (cardData && progress > 0) {
-        const cardWidth = cardData.width || contentWidth - 48;
-        const gravSlideFactor = viewportWidth < 500 ? 0.03 : 0.08;
-        const slideDistance = direction === -1 ? -viewportWidth * gravSlideFactor : viewportWidth * gravSlideFactor;
-        const slideOffset = (1 - progress) * slideDistance;
-        const cardCenterX = viewportWidth / 2 + slideOffset;
-
-        // Pad the well slightly so characters accumulate around edges
-        const pad = 20;
-        newGravityWells.push({
-          x: cardCenterX - cardWidth / 2 - pad,
-          y: cardScreenY - pad,
-          width: cardWidth + pad * 2,
-          height: cardData.height + pad * 2,
-          strength: progress >= 0.99 ? 1.2 : progress,
-        });
-      }
+      const cardWidth = cardData.width || contentWidth - 48;
+      const cardCenterX = viewportWidth / 2;
+      const pad = 20;
+      newGravityWells.push({
+        x: cardCenterX - cardWidth / 2 - pad,
+        y: cardScreenY - pad,
+        width: cardWidth + pad * 2,
+        height: cardData.height + pad * 2,
+        strength: 1.2,
+      });
     });
 
-    setCardAnimations(newAnimations);
     setGravityWells(newGravityWells);
   };
 
@@ -694,9 +611,6 @@ export default function Portfolio() {
                 {...exp}
                 index={i}
                 onMeasure={handleCardMeasure}
-                scrollProgress={cardAnimations[i]?.progress ?? 0}
-                direction={cardAnimations[i]?.direction ?? (i % 2 === 0 ? -1 : 1)}
-                viewportWidth={viewportSize.width}
               />
             ))}
           </Section>
