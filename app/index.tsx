@@ -27,10 +27,10 @@ import {
 
 const scene: SceneDirector = (scrollY, time, w, h) => {
   // Hero: fly through the tunnel
-  if (scrollY < h * 0.15) return effects.tunnel;
+  if (scrollY < 50) return effects.tunnel;
   // Collapse: tunnel breaks apart into rain columns
-  if (scrollY < h * 0.75) {
-    const t = easings.easeInOut((scrollY - h * 0.15) / (h * 0.6));
+  if (scrollY < 400) {
+    const t = easings.easeInOut((scrollY - 50) / 350);
     return blend(effects.tunnel, effects.rain, t);
   }
   // Content: vertical rain (gravity wells bend it around cards)
@@ -401,25 +401,13 @@ export default function Portfolio() {
   const underlineAnim = useAnimatedValue(300);
   const [gravityWells, setGravityWells] = useState<GravityWell[]>([]);
   const [scrollPosition, setScrollPosition] = useState(0);
-  const [showScrollHint, setShowScrollHint] = useState(true);
   const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
   const experienceCardLayouts = useRef<{ y: number; height: number; width: number }[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const hasInitializedRef = useRef(false);
   const currentScrollY = useRef(0);
 
-  // Scroll indicator pulse
-  const scrollHintAnim = useRef(new Animated.Value(1)).current;
-  useEffect(() => {
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(scrollHintAnim, { toValue: 0.2, duration: 1200, useNativeDriver: true }),
-        Animated.timing(scrollHintAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
-      ]),
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, []);
+
 
 
   // Handle card measurement - converts screen Y to content Y
@@ -453,7 +441,6 @@ export default function Portfolio() {
     const scrollY = contentOffset.y;
     currentScrollY.current = scrollY;
     setScrollPosition(scrollY);
-    if (scrollY > 50 && showScrollHint) setShowScrollHint(false);
     const viewportHeight = layoutMeasurement.height;
     const viewportWidth = layoutMeasurement.width;
     setViewportSize({ width: viewportWidth, height: viewportHeight });
@@ -506,7 +493,7 @@ export default function Portfolio() {
           scrollEventThrottle={16}
         >
           {/* Hero — full viewport, tunnel effect behind */}
-          <View style={[styles.hero, { minHeight: windowHeight }]}>
+          <View style={styles.hero}>
             <Animated.View
               style={[
                 styles.header,
@@ -586,12 +573,6 @@ export default function Portfolio() {
               </Pressable>
             </Animated.View>
 
-            {/* Scroll indicator */}
-            {showScrollHint && (
-              <Animated.View style={[styles.scrollHint, { opacity: scrollHintAnim }]}>
-                <Text style={styles.scrollHintText}>↓</Text>
-              </Animated.View>
-            )}
           </View>
 
           {/* Skills */}
@@ -657,18 +638,6 @@ const styles = StyleSheet.create({
   header: {
     alignItems: "center",
     marginBottom: 48,
-  },
-  scrollHint: {
-    position: "absolute",
-    bottom: 40,
-    alignSelf: "center",
-  },
-  scrollHintText: {
-    fontSize: 28,
-    color: "#60a5fa",
-    ...(Platform.OS === "web" && {
-      textShadow: "0 0 15px rgba(96, 165, 250, 0.6)",
-    }),
   },
   name: {
     fontSize: 48,
