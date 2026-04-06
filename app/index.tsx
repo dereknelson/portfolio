@@ -8,10 +8,34 @@ import {
   Animated,
   StyleSheet,
   Platform,
+  useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { MatrixRain, GravityWell } from "./components/MatrixRain";
+import {
+  MatrixRain,
+  GravityWell,
+  SceneDirector,
+  effects,
+  blend,
+  easings,
+} from "./components/MatrixRain";
+
+// =============================================================================
+// Scene Choreography
+// =============================================================================
+
+const scene: SceneDirector = (scrollY, time, w, h) => {
+  // Hero: fly through the tunnel
+  if (scrollY < h * 0.15) return effects.tunnel;
+  // Collapse: tunnel breaks apart into rain columns
+  if (scrollY < h * 0.75) {
+    const t = easings.easeInOut((scrollY - h * 0.15) / (h * 0.6));
+    return blend(effects.tunnel, effects.rain, t);
+  }
+  // Content: vertical rain (gravity wells bend it around cards)
+  return effects.rain;
+};
 
 // =============================================================================
 // Data
@@ -249,9 +273,6 @@ function ExperienceCard({
   bullets,
   index,
   onMeasure,
-  scrollProgress = 0,
-  direction = 1,
-  viewportWidth = 800,
 }: {
   company: string;
   role: string;
@@ -259,49 +280,22 @@ function ExperienceCard({
   bullets: string[];
   index: number;
   onMeasure?: (index: number, screenY: number, height: number, width: number) => void;
-  scrollProgress?: number;
-  direction?: number;
-  viewportWidth?: number;
 }) {
   const [hovered, setHovered] = useState(false);
   const viewRef = useRef<View>(null);
 
-  // First card is always visible, others slide in from sides
-  const effectiveProgress = index === 0 ? 1 : scrollProgress;
-
-  // Slide animation - cards come in from left or right based on direction
-  const slideDistance = direction === -1
-    ? -viewportWidth * 0.08
-    : viewportWidth * 0.08;
-
-  const translateX = (1 - effectiveProgress) * slideDistance;
-  const opacity = effectiveProgress;
-  const scale = 0.85 + effectiveProgress * 0.15;
-
   return (
     <View
       ref={viewRef}
-      style={{
-        opacity,
-        transform: [
-          { translateX: translateX + (hovered ? 8 * -direction : 0) },
-          { scale },
-        ],
-      }}
       onLayout={() => {
         if (onMeasure && Platform.OS === "web" && viewRef.current) {
-          // Delay to ensure AnimatedSection translateY animation completes
           setTimeout(() => {
             const element = viewRef.current as unknown as HTMLElement;
             if (element && element.getBoundingClientRect) {
               const rect = element.getBoundingClientRect();
-              // rect.top is screen Y; convert to content Y by adding current scroll
-              // Since we're inside ScrollView, we need to track scroll separately
-              // For now, store screen Y and handle in scroll handler
-              console.log(`Card ${index} measured: top=${rect.top}, height=${rect.height}`);
               onMeasure(index, rect.top, rect.height, rect.width);
             }
-          }, 600); // Wait for animations to settle
+          }, 600);
         }
       }}
     >
@@ -402,18 +396,30 @@ function ProjectCard({
 // =============================================================================
 
 export default function Portfolio() {
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const headerAnim = useAnimatedValue(0);
   const underlineAnim = useAnimatedValue(300);
   const [gravityWells, setGravityWells] = useState<GravityWell[]>([]);
-  const prevCardPositions = useRef<Record<string, { x: number; y: number; timestamp: number }>>({});
-  const [cardAnimations, setCardAnimations] = useState<{ progress: number; direction: number }[]>(
-    experience.map((_, i) => ({ progress: i === 0 ? 1 : 0, direction: i % 2 === 0 ? 1 : -1 })) // First card visible, others hidden until they scroll into view
-  );
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [showScrollHint, setShowScrollHint] = useState(true);
   const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
   const experienceCardLayouts = useRef<{ y: number; height: number; width: number }[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const hasInitializedRef = useRef(false);
-  const currentScrollY = useRef(0); // Track current scroll for measurements
+  const currentScrollY = useRef(0);
+
+  // Scroll indicator pulse
+  const scrollHintAnim = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(scrollHintAnim, { toValue: 0.2, duration: 1200, useNativeDriver: true }),
+        Animated.timing(scrollHintAnim, { toValue: 1, duration: 1200, useNativeDriver: true }),
+      ]),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, []);
 
 
   // Handle card measurement - converts screen Y to content Y
@@ -441,176 +447,40 @@ export default function Portfolio() {
     }
   };
 
-  // ==========================================
-  // Animation Functions (discrete, composable)
-  // ==========================================
-
-  // Easing function
-  const ease = (t: number) => t * t * (3 - 2 * t);
-
-  // Clamp value between 0 and 1
-  const clamp01 = (t: number) => Math.max(0, Math.min(1, t));
-
-  // Calculate progress based on scroll position
-  // Cards animate in sequentially as you scroll
-  const SCROLL_PER_CARD = 250; // Each card takes 250px of scroll to animate
-
-  const getCardProgress = (
-    scrollY: number,
-    cardIndex: number
-  ): number => {
-    // First card is always fully visible
-    if (cardIndex === 0) return 1;
-
-    // Each subsequent card animates over SCROLL_PER_CARD pixels
-    // Card 1: scrollY 0-250, Card 2: scrollY 250-500, etc.
-    const cardStartScroll = (cardIndex - 1) * SCROLL_PER_CARD;
-    const cardEndScroll = cardIndex * SCROLL_PER_CARD;
-
-    if (scrollY <= cardStartScroll) return 0;
-    if (scrollY >= cardEndScroll) return 1;
-
-    const progress = (scrollY - cardStartScroll) / SCROLL_PER_CARD;
-    return ease(clamp01(progress));
-  };
-
-  // Calculate card bounds for gravity effect, including velocity
-  // Now creates gravity wells for ALL visible cards, not just animating ones
-  const getCardBounds = (
-    progress: number,
-    direction: number,
-    cardScreenY: number,
-    cardWidth: number,
-    cardHeight: number,
-    viewportWidth: number,
-    viewportHeight: number,
-    timestamp: number,
-    cardIndex: number
-  ) => {
-    // Skip if card is not visible at all (fully off-screen)
-    if (progress <= 0) return null;
-
-    // Skip if card is off-screen vertically
-    if (cardScreenY + cardHeight < -100 || cardScreenY > viewportHeight + 100) return null;
-
-    const slideDistance = direction === -1 ? -viewportWidth * 0.2 : viewportWidth * 0.2;
-    const slideOffset = (1 - progress) * slideDistance;
-    const cardCenterX = viewportWidth / 2 + slideOffset;
-    const cardX = cardCenterX - cardWidth / 2;
-
-    // Calculate velocity from previous position
-    let velocityX = 0;
-    let velocityY = 0;
-
-    // Use per-card velocity tracking
-    const prevKey = `card_${cardIndex}`;
-    const prev = prevCardPositions.current[prevKey];
-    if (prev) {
-      const deltaTime = (timestamp - prev.timestamp) / 1000;
-      if (deltaTime > 0 && deltaTime < 0.1) {
-        velocityX = (cardX - prev.x) / deltaTime;
-        velocityY = (cardScreenY - prev.y) / deltaTime;
-        velocityX = Math.max(-2000, Math.min(2000, velocityX));
-        velocityY = Math.max(-2000, Math.min(2000, velocityY));
-      }
-    }
-    prevCardPositions.current[prevKey] = { x: cardX, y: cardScreenY, timestamp };
-
-    // Strength calculation:
-    // - During animation (0 < progress < 1): peaks at 50% progress
-    // - When fully visible (progress = 1): constant moderate strength
-    let strength: number;
-    if (progress >= 0.99) {
-      // Fully visible card - constant gravity well
-      strength = 1.5;
-    } else {
-      // Animating card - stronger effect that peaks at 50%
-      strength = progress * (1 - progress) * 8;
-    }
-
-    return {
-      x: cardX,
-      y: cardScreenY,
-      width: cardWidth,
-      height: cardHeight,
-      strength,
-      velocityX,
-      velocityY,
-    };
-  };
-
   // Main scroll handler
   const handleScroll = (e: any) => {
     const { contentOffset, layoutMeasurement } = e.nativeEvent;
     const scrollY = contentOffset.y;
-    currentScrollY.current = scrollY; // Track for measurements
+    currentScrollY.current = scrollY;
+    setScrollPosition(scrollY);
+    if (scrollY > 50 && showScrollHint) setShowScrollHint(false);
     const viewportHeight = layoutMeasurement.height;
     const viewportWidth = layoutMeasurement.width;
-    const timestamp = performance.now();
     setViewportSize({ width: viewportWidth, height: viewportHeight });
 
     const contentWidth = Math.min(viewportWidth, 800);
-
-    const newAnimations: { progress: number; direction: number }[] = [];
-    let activeGravityWell: GravityWell | null = null;
-    let lastVisibleCardIndex = 0;
+    const newGravityWells: GravityWell[] = [];
 
     experienceCardLayouts.current.forEach((cardData, index) => {
-      const direction = index % 2 === 0 ? 1 : -1;
+      if (!cardData) return;
 
-      // Calculate card's position relative to viewport (top of viewport = 0)
-      const cardScreenY = cardData ? cardData.y - scrollY : viewportHeight + 100;
+      const cardScreenY = cardData.y - scrollY;
+      // Only create gravity wells for cards that are on screen
+      if (cardScreenY + cardData.height < -100 || cardScreenY > viewportHeight + 100) return;
 
-      // Calculate progress based on scroll position (sequential animation)
-      const progress = getCardProgress(scrollY, index);
-
-      newAnimations.push({ progress, direction });
-
-      // Track the last card that's at least partially visible
-      if (progress > 0) {
-        lastVisibleCardIndex = index;
-      }
-
-      // Create gravity well for the card that's currently animating
-      if (cardData && !activeGravityWell && progress > 0.01 && progress < 0.99) {
-        const cardWidth = cardData.width || contentWidth - 48;
-
-        // Calculate the card's current X position based on slide animation
-        const slideDistance = direction === -1 ? -viewportWidth * 0.08 : viewportWidth * 0.08;
-        const slideOffset = (1 - progress) * slideDistance;
-        const cardCenterX = viewportWidth / 2 + slideOffset;
-
-        activeGravityWell = {
-          x: cardCenterX - cardWidth / 2,
-          y: cardScreenY,
-          width: cardWidth,
-          height: cardData.height,
-          strength: 1,
-        };
-      }
+      const cardWidth = cardData.width || contentWidth - 48;
+      const cardCenterX = viewportWidth / 2;
+      const pad = 20;
+      newGravityWells.push({
+        x: cardCenterX - cardWidth / 2 - pad,
+        y: cardScreenY - pad,
+        width: cardWidth + pad * 2,
+        height: cardData.height + pad * 2,
+        strength: 1.2,
+      });
     });
 
-    // If no card is currently animating, keep gravity well at the last visible card
-    if (!activeGravityWell && lastVisibleCardIndex > 0) {
-      const cardData = experienceCardLayouts.current[lastVisibleCardIndex];
-      if (cardData) {
-        const direction = lastVisibleCardIndex % 2 === 0 ? 1 : -1;
-        const cardScreenY = cardData.y - scrollY;
-        const cardWidth = cardData.width || contentWidth - 48;
-        const cardCenterX = viewportWidth / 2; // Centered since fully visible
-
-        activeGravityWell = {
-          x: cardCenterX - cardWidth / 2,
-          y: cardScreenY,
-          width: cardWidth,
-          height: cardData.height,
-          strength: 0.8,
-        };
-      }
-    }
-
-    setCardAnimations(newAnimations);
-    setGravityWells(activeGravityWell ? [activeGravityWell] : []);
+    setGravityWells(newGravityWells);
   };
 
   return (
@@ -618,8 +488,10 @@ export default function Portfolio() {
       {/* Background */}
       <View style={[StyleSheet.absoluteFill, { backgroundColor: "#000" }]} />
 
-      {/* Matrix rain background with card gravity effect */}
+      {/* Matrix rain — scene transitions from tunnel to rain on scroll */}
       <MatrixRain
+        scene={scene}
+        scrollY={scrollPosition}
         gravityWells={gravityWells}
         enableGravity={true}
         debug={false}
@@ -633,85 +505,94 @@ export default function Portfolio() {
           onScroll={handleScroll}
           scrollEventThrottle={16}
         >
-          {/* Header */}
-          <Animated.View
-            style={[
-              styles.header,
-              {
-                opacity: headerAnim,
-                transform: [
-                  {
-                    translateY: headerAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [-30, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <Animated.Text
+          {/* Hero — full viewport, tunnel effect behind */}
+          <View style={[styles.hero, { minHeight: windowHeight }]}>
+            <Animated.View
               style={[
-                styles.name,
+                styles.header,
                 {
+                  opacity: headerAnim,
                   transform: [
                     {
-                      scale: headerAnim.interpolate({
+                      translateY: headerAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [0.9, 1],
+                        outputRange: [-30, 0],
                       }),
                     },
                   ],
                 },
               ]}
             >
-              Derek Nelson
-            </Animated.Text>
+              <Animated.Text
+                style={[
+                  styles.name,
+                  {
+                    transform: [
+                      {
+                        scale: headerAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.9, 1],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                Derek Nelson
+              </Animated.Text>
 
-            <Animated.View
-              style={[
-                styles.underline,
-                {
-                  opacity: underlineAnim,
-                  transform: [{ scaleX: underlineAnim }],
-                },
-              ]}
-            >
-              <LinearGradient
-                colors={["#3b82f6", "#60a5fa", "#3b82f6"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={styles.underlineGradient}
-              />
+              <Animated.View
+                style={[
+                  styles.underline,
+                  {
+                    opacity: underlineAnim,
+                    transform: [{ scaleX: underlineAnim }],
+                  },
+                ]}
+              >
+                <LinearGradient
+                  colors={["#3b82f6", "#60a5fa", "#3b82f6"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={styles.underlineGradient}
+                />
+              </Animated.View>
+
+              <View style={styles.locationRow}>
+                <View style={styles.statusDot} />
+                <Text style={styles.location}>Brooklyn, NY</Text>
+              </View>
+
+              <Pressable onPress={() => Linking.openURL("mailto:derek@rlvnt.io")}>
+                <Text style={styles.email}>derek@rlvnt.io</Text>
+              </Pressable>
+
+              <Pressable
+                onPress={() => Linking.openURL("https://github.com/dereknelson")}
+                style={styles.githubLink}
+              >
+                {Platform.OS === "web" ? (
+                  <svg
+                    width="22"
+                    height="22"
+                    viewBox="0 0 24 24"
+                    fill="#94a3b8"
+                  >
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                  </svg>
+                ) : (
+                  <Text style={styles.githubFallback}>GitHub</Text>
+                )}
+              </Pressable>
             </Animated.View>
 
-            <View style={styles.locationRow}>
-              <View style={styles.statusDot} />
-              <Text style={styles.location}>Brooklyn, NY</Text>
-            </View>
-
-            <Pressable onPress={() => Linking.openURL("mailto:derek@rlvnt.io")}>
-              <Text style={styles.email}>derek@rlvnt.io</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={() => Linking.openURL("https://github.com/dereknelson")}
-              style={styles.githubLink}
-            >
-              {Platform.OS === "web" ? (
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="0 0 24 24"
-                  fill="#94a3b8"
-                >
-                  <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                </svg>
-              ) : (
-                <Text style={styles.githubFallback}>GitHub</Text>
-              )}
-            </Pressable>
-          </Animated.View>
+            {/* Scroll indicator */}
+            {showScrollHint && (
+              <Animated.View style={[styles.scrollHint, { opacity: scrollHintAnim }]}>
+                <Text style={styles.scrollHintText}>↓</Text>
+              </Animated.View>
+            )}
+          </View>
 
           {/* Skills */}
           <Section title="Skills" delay={300}>
@@ -730,9 +611,6 @@ export default function Portfolio() {
                 {...exp}
                 index={i}
                 onMeasure={handleCardMeasure}
-                scrollProgress={cardAnimations[i]?.progress ?? 0}
-                direction={cardAnimations[i]?.direction ?? (i % 2 === 0 ? -1 : 1)}
-                viewportWidth={viewportSize.width}
               />
             ))}
           </Section>
@@ -772,9 +650,25 @@ const styles = StyleSheet.create({
     marginHorizontal: "auto",
     width: "100%",
   },
+  hero: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
   header: {
     alignItems: "center",
     marginBottom: 48,
+  },
+  scrollHint: {
+    position: "absolute",
+    bottom: 40,
+    alignSelf: "center",
+  },
+  scrollHintText: {
+    fontSize: 28,
+    color: "#60a5fa",
+    ...(Platform.OS === "web" && {
+      textShadow: "0 0 15px rgba(96, 165, 250, 0.6)",
+    }),
   },
   name: {
     fontSize: 48,
