@@ -449,6 +449,7 @@ export function MatrixRain({
     let animId: number;
     let lastTime = performance.now();
     const startTime = lastTime;
+    let smoothedScroll = scrollRef.current;
 
     const loop = () => {
       animId = requestAnimationFrame(loop);
@@ -460,12 +461,17 @@ export function MatrixRain({
 
       const elapsed = (now - startTime) / 1000;
 
+      // Smooth the scroll value so fast scrolls don't snap the effect
+      const scrollTarget = scrollRef.current;
+      const lerpRate = 1 - Math.pow(0.02, dt); // ~60% per frame at 60fps
+      smoothedScroll += (scrollTarget - smoothedScroll) * lerpRate;
+
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, width, height);
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
 
-      const currentEffect = sceneRef.current(scrollRef.current, elapsed, width, height);
+      const currentEffect = sceneRef.current(smoothedScroll, elapsed, width, height);
       const wells = gravityWellsRef.current;
       const gravEnabled = enableGravityRef.current;
       const config = configRef.current;
