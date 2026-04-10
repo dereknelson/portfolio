@@ -17,25 +17,13 @@ import {
   GravityWell,
   SceneDirector,
   effects,
-  blend,
-  easings,
-} from "./components/MatrixRain";
+} from "./components/matrix";
 
 // =============================================================================
 // Scene Choreography
 // =============================================================================
 
-const scene: SceneDirector = (scrollY, time, w, h) => {
-  // Hero: fly through the tunnel
-  if (scrollY < 50) return effects.tunnel;
-  // Collapse: tunnel breaks apart into rain columns
-  if (scrollY < 400) {
-    const t = easings.easeInOut((scrollY - 50) / 350);
-    return blend(effects.tunnel, effects.rain, t);
-  }
-  // Content: vertical rain (gravity wells bend it around cards)
-  return effects.rain;
-};
+const scene: SceneDirector = () => effects.tunnel;
 
 // =============================================================================
 // Data
@@ -51,6 +39,7 @@ const skills = [
   "Docker",
   "AWS/GCP",
   "GraphQL",
+  "Vim",
 ];
 
 const experience = [
@@ -144,8 +133,8 @@ function useAnimatedValue(delay: number = 0) {
       Animated.spring(anim, {
         toValue: 1,
         useNativeDriver: true,
-        tension: 40,
-        friction: 8,
+        tension: 80,
+        friction: 10,
       }).start();
     }, delay);
     return () => clearTimeout(timeout);
@@ -228,7 +217,7 @@ function Section({
 }
 
 function SkillBadge({ skill, index }: { skill: string; index: number }) {
-  const anim = useAnimatedValue(500 + index * 60);
+  const anim = useAnimatedValue(150 + index * 20);
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -272,32 +261,20 @@ function ExperienceCard({
   period,
   bullets,
   index,
-  onMeasure,
+  cardRef,
 }: {
   company: string;
   role: string;
   period: string;
   bullets: string[];
   index: number;
-  onMeasure?: (index: number, screenY: number, height: number, width: number) => void;
+  cardRef?: (index: number, el: View | null) => void;
 }) {
   const [hovered, setHovered] = useState(false);
-  const viewRef = useRef<View>(null);
 
   return (
     <View
-      ref={viewRef}
-      onLayout={() => {
-        if (onMeasure && Platform.OS === "web" && viewRef.current) {
-          setTimeout(() => {
-            const element = viewRef.current as unknown as HTMLElement;
-            if (element && element.getBoundingClientRect) {
-              const rect = element.getBoundingClientRect();
-              onMeasure(index, rect.top, rect.height, rect.width);
-            }
-          }, 600);
-        }
-      }}
+      ref={(el) => cardRef?.(index, el)}
     >
       <Pressable
         onHoverIn={() => setHovered(true)}
@@ -342,18 +319,21 @@ function ProjectCard({
   year,
   description,
   index,
+  cardRef,
 }: {
   name: string;
   url: string;
   year: string;
   description: string;
   index: number;
+  cardRef?: (index: number, el: View | null) => void;
 }) {
-  const anim = useAnimatedValue(1300 + index * 100);
+  const anim = useAnimatedValue(300 + index * 30);
   const [hovered, setHovered] = useState(false);
 
   return (
     <Animated.View
+      ref={(el: View | null) => cardRef?.(index, el)}
       style={{
         opacity: anim,
         transform: [
@@ -398,88 +378,59 @@ function ProjectCard({
 export default function Portfolio() {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
   const headerAnim = useAnimatedValue(0);
-  const underlineAnim = useAnimatedValue(300);
-  const [gravityWells, setGravityWells] = useState<GravityWell[]>([]);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [viewportSize, setViewportSize] = useState({ width: windowWidth, height: windowHeight });
-  const experienceCardLayouts = useRef<{ y: number; height: number; width: number }[]>([]);
-  const scrollViewRef = useRef<ScrollView>(null);
-  const hasInitializedRef = useRef(false);
-  const currentScrollY = useRef(0);
+  const underlineAnim = useAnimatedValue(100);
+  const gravityWellsRef = useRef<GravityWell[]>([]);
+  const scrollYRef = useRef(0);
+  const expCardRefs = useRef<(HTMLElement | null)[]>([]);
+  const projCardRefs = useRef<(HTMLElement | null)[]>([]);
+  const initialMeasureDone = useRef(false);
 
-  // Keep viewport size in sync with window dimensions on mount/resize
+  // Measure gravity wells once after entrance animations settle
   useEffect(() => {
-    setViewportSize({ width: windowWidth, height: windowHeight });
-  }, [windowWidth, windowHeight]);
+    const t = setTimeout(() => {
+      initialMeasureDone.current = true;
+      measureGravityWells();
+    }, 700);
+    return () => clearTimeout(t);
+  }, []);
 
-
-
-
-  // Handle card measurement - converts screen Y to content Y
-  const handleCardMeasure = (index: number, screenY: number, height: number, width: number) => {
-    // Convert screen Y to content Y by adding current scroll position
-    const contentY = screenY + currentScrollY.current;
-    experienceCardLayouts.current[index] = { y: contentY, height, width };
-
-    // Rebuild gravity wells from all measured cards
-    const vw = viewportSize.width || windowWidth;
-    const vh = viewportSize.height || windowHeight;
-    const scrollY = currentScrollY.current;
-    const newGravityWells: GravityWell[] = [];
-
-    experienceCardLayouts.current.forEach((cardData) => {
-      if (!cardData) return;
-      const cardScreenY = cardData.y - scrollY;
-      if (cardScreenY + cardData.height < -100 || cardScreenY > vh + 100) return;
-      const cardWidth = cardData.width || Math.min(vw, 800) - 48;
-      const pad = 20;
-      newGravityWells.push({
-        x: vw / 2 - cardWidth / 2 - pad,
-        y: cardScreenY - pad,
-        width: cardWidth + pad * 2,
-        height: cardData.height + pad * 2,
-        strength: 1.2,
-      });
-    });
-
-    if (newGravityWells.length > 0) {
-      setGravityWells(newGravityWells);
+  // Store card element refs (measurement happens after animations settle)
+  const handleExpCardRef = (index: number, el: View | null) => {
+    if (Platform.OS === "web" && el) {
+      expCardRefs.current[index] = el as unknown as HTMLElement;
     }
   };
 
-  // Main scroll handler
-  const handleScroll = (e: any) => {
-    const { contentOffset, layoutMeasurement } = e.nativeEvent;
-    const scrollY = contentOffset.y;
-    currentScrollY.current = scrollY;
-    setScrollPosition(scrollY);
-    const viewportHeight = layoutMeasurement.height;
-    const viewportWidth = layoutMeasurement.width;
-    setViewportSize({ width: viewportWidth, height: viewportHeight });
+  const handleProjCardRef = (index: number, el: View | null) => {
+    if (Platform.OS === "web" && el) {
+      projCardRefs.current[index] = el as unknown as HTMLElement;
+    }
+  };
 
-    const contentWidth = Math.min(viewportWidth, 800);
-    const newGravityWells: GravityWell[] = [];
-
-    experienceCardLayouts.current.forEach((cardData, index) => {
-      if (!cardData) return;
-
-      const cardScreenY = cardData.y - scrollY;
-      // Only create gravity wells for cards that are on screen
-      if (cardScreenY + cardData.height < -100 || cardScreenY > viewportHeight + 100) return;
-
-      const cardWidth = cardData.width || contentWidth - 48;
-      const cardCenterX = viewportWidth / 2;
-      const pad = 20;
-      newGravityWells.push({
-        x: cardCenterX - cardWidth / 2 - pad,
-        y: cardScreenY - pad,
-        width: cardWidth + pad * 2,
-        height: cardData.height + pad * 2,
+  // Measure card positions directly from DOM, write to ref — no re-render
+  const measureGravityWells = () => {
+    const vh = windowHeight;
+    const wells: GravityWell[] = [];
+    const allRefs = [...expCardRefs.current, ...projCardRefs.current];
+    allRefs.forEach((el) => {
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      if (rect.bottom < -100 || rect.top > vh + 100) return;
+      wells.push({
+        x: rect.left,
+        y: rect.top - 10,
+        width: rect.width,
+        height: rect.height,
         strength: 1.2,
       });
     });
+    gravityWellsRef.current = wells;
+  };
 
-    setGravityWells(newGravityWells);
+  // Main scroll handler — writes to refs only, no setState
+  const handleScroll = (e: any) => {
+    scrollYRef.current = e.nativeEvent.contentOffset.y;
+    measureGravityWells();
   };
 
   return (
@@ -490,8 +441,8 @@ export default function Portfolio() {
       {/* Matrix rain — scene transitions from tunnel to rain on scroll */}
       <MatrixRain
         scene={scene}
-        scrollY={scrollPosition}
-        gravityWells={gravityWells}
+        scrollYRef={scrollYRef}
+        gravityWellsRef={gravityWellsRef}
         enableGravity={true}
         debug={false}
       />
@@ -588,7 +539,7 @@ export default function Portfolio() {
           </View>
 
           {/* Skills */}
-          <Section title="Skills" delay={300}>
+          <Section title="Skills" delay={100}>
             <View style={styles.skillsContainer}>
               {skills.map((skill, i) => (
                 <SkillBadge key={skill} skill={skill} index={i} />
@@ -597,21 +548,21 @@ export default function Portfolio() {
           </Section>
 
           {/* Experience */}
-          <Section title="Experience" delay={500}>
+          <Section title="Experience" delay={200}>
             {experience.map((exp, i) => (
               <ExperienceCard
                 key={exp.company}
                 {...exp}
                 index={i}
-                onMeasure={handleCardMeasure}
+                cardRef={handleExpCardRef}
               />
             ))}
           </Section>
 
           {/* Projects */}
-          <Section title="Noteworthy Projects" delay={900}>
+          <Section title="Noteworthy Projects" delay={350}>
             {projects.map((proj, i) => (
-              <ProjectCard key={proj.name} {...proj} index={i} />
+              <ProjectCard key={proj.name} {...proj} index={i} cardRef={handleProjCardRef} />
             ))}
           </Section>
 
@@ -757,9 +708,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
     borderColor: "rgba(60, 60, 60, 0.5)",
-    ...(Platform.OS === "web" && {
-      backdropFilter: "blur(10px)",
-    }),
+    backgroundColor: "rgba(0, 0, 0, 0.88)",
   },
   cardHovered: {
     borderColor: "rgba(96, 165, 250, 0.4)",

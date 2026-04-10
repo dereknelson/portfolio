@@ -400,18 +400,12 @@ function drawChar(
   const alpha = clamp(brightness, 0, 1);
 
   if (brightness > 0.9) {
-    ctx.shadowColor = "rgb(96, 165, 250)";
-    ctx.shadowBlur = 8;
-    ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+    ctx.fillStyle = `rgba(220, 235, 255, ${alpha})`;
   } else if (brightness > 0.6) {
-    ctx.shadowColor = "rgb(96, 165, 250)";
-    ctx.shadowBlur = 4;
     ctx.fillStyle = `rgba(147, 197, 253, ${alpha})`;
   } else if (brightness > 0.3) {
-    ctx.shadowBlur = 2;
     ctx.fillStyle = `rgba(${Math.floor(30 + brightness * 66)}, ${Math.floor(80 + brightness * 85)}, ${Math.floor(150 + brightness * 100)}, ${alpha})`;
   } else {
-    ctx.shadowBlur = 0;
     ctx.fillStyle = `rgba(${Math.floor(20 + brightness * 50)}, ${Math.floor(40 + brightness * 80)}, ${Math.floor(100 + brightness * 100)}, ${alpha})`;
   }
 
@@ -431,35 +425,40 @@ const defaultScene: SceneDirector = () => rainEffect;
 
 interface MatrixRainProps {
   gravityWells?: GravityWell[];
+  gravityWellsRef?: React.RefObject<GravityWell[]>;
   enableGravity?: boolean;
   gravityConfig?: Partial<GravityConfig>;
   debug?: boolean;
-  /** Scene director: maps (scrollY, time, w, h) → active Effect */
   scene?: SceneDirector;
-  /** Current scroll position in pixels */
   scrollY?: number;
+  scrollYRef?: React.RefObject<number>;
 }
 
 export function MatrixRain({
   gravityWells = [],
+  gravityWellsRef: externalGravityRef,
   enableGravity = true,
   gravityConfig = {},
   debug = false,
   scene,
   scrollY = 0,
+  scrollYRef: externalScrollRef,
 }: MatrixRainProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { width, height } = useWindowDimensions();
 
   // All reactive values go through refs — read in animation loop, no re-init
-  const gravityWellsRef = useRef(gravityWells);
-  gravityWellsRef.current = gravityWells;
+  const internalGravityRef = useRef(gravityWells);
+  internalGravityRef.current = gravityWells;
+  // Use external ref if provided (zero re-renders), otherwise internal
+  const gravityWellsRefFinal = externalGravityRef ?? internalGravityRef;
   const enableGravityRef = useRef(enableGravity);
   enableGravityRef.current = enableGravity;
   const sceneRef = useRef(scene ?? defaultScene);
   sceneRef.current = scene ?? defaultScene;
-  const scrollRef = useRef(scrollY);
-  scrollRef.current = scrollY;
+  const internalScrollRef = useRef(scrollY);
+  internalScrollRef.current = scrollY;
+  const scrollRef = externalScrollRef ?? internalScrollRef;
   const configRef = useRef({ ...DEFAULT_GRAVITY_CONFIG, ...gravityConfig });
   configRef.current = { ...DEFAULT_GRAVITY_CONFIG, ...gravityConfig };
 
@@ -499,6 +498,7 @@ export function MatrixRain({
     let animId: number;
     let lastTime = performance.now();
     const startTime = lastTime;
+    const getGravityOffset = createGravityCalculator(configRef.current);
 
     const loop = () => {
       animId = requestAnimationFrame(loop);
@@ -510,16 +510,21 @@ export function MatrixRain({
 
       const elapsed = (now - startTime) / 1000;
 
+      // Fade in within the canvas — no React re-render, no CSS transition
+      const FADE_START = 0.2;  // start early
+      const FADE_DUR = 1.2;    // ramp up slowly
+      const fade = clamp((elapsed - FADE_START) / FADE_DUR, 0, 1);
+      if (fade <= 0) return;   // don't draw at all before fade starts
+
+      ctx.globalAlpha = fade * OPACITY;
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, width, height);
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
 
       const currentEffect = sceneRef.current(scrollRef.current, elapsed, width, height);
-      const wells = gravityWellsRef.current;
+      const wells = gravityWellsRefFinal.current;
       const gravEnabled = enableGravityRef.current;
-      const config = configRef.current;
-      const getGravityOffset = createGravityCalculator(config);
 
       for (let i = 0; i < numParticles; i++) {
         const p = particles[i];
@@ -550,8 +555,8 @@ export function MatrixRain({
 
           if (gravEnabled && wells.length > 0) {
             const grav = getGravityOffset(sx, sy, wells);
-            gravOffsets[i][t].x += (grav.dx - gravOffsets[i][t].x) * config.smoothing;
-            gravOffsets[i][t].y += (grav.dy - gravOffsets[i][t].y) * config.smoothing;
+            gravOffsets[i][t].x += (grav.dx - gravOffsets[i][t].x) * configRef.current.smoothing;
+            gravOffsets[i][t].y += (grav.dy - gravOffsets[i][t].y) * configRef.current.smoothing;
             drawX += gravOffsets[i][t].x;
             drawY += gravOffsets[i][t].y;
             sBright = clamp(sBright + grav.brightness, 0, 1);
@@ -566,8 +571,7 @@ export function MatrixRain({
         }
       }
 
-      ctx.shadowBlur = 0;
-
+      ctx.globalAlpha = 1;
       if (debug && wells.length > 0) {
         for (const well of wells) {
           ctx.strokeStyle = "#00ff00";
@@ -581,10 +585,11 @@ export function MatrixRain({
     return () => cancelAnimationFrame(animId);
   }, [width, height]);
 
+
   if (Platform.OS !== "web") return null;
 
   return (
-    <View style={[styles.container, { opacity: OPACITY }]} pointerEvents="none">
+    <View style={styles.container} pointerEvents="none">
       <canvas
         ref={canvasRef as any}
         style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
