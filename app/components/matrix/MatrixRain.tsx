@@ -6,6 +6,7 @@ import { createGravityCalculator, DEFAULT_GRAVITY_CONFIG } from "./gravity";
 import { drawCharGreen } from "./drawing";
 import { createAtlasDrawFn } from "./atlas";
 import { runLoop, DEFAULT_LOOP_CONFIG, LoopConfig } from "./loop";
+import { clamp } from "./helpers";
 import {
   createParticlePool,
   renderParticles,
@@ -55,6 +56,39 @@ export function MatrixRain({
   drawFnRef.current = drawFn;
   const debugRef = useRef(debug);
   debugRef.current = debug;
+  const tiltRef = useRef({ x: 0, y: 0 });
+
+  // Gyroscope parallax — shift tunnel center based on device tilt
+  useEffect(() => {
+    if (Platform.OS !== "web") return;
+    const PARALLAX_RANGE = 80; // max px offset
+    const SMOOTHING = 0.1;
+    let baseGamma: number | null = null;
+    let baseBeta: number | null = null;
+
+    const handler = (e: DeviceOrientationEvent) => {
+      if (e.gamma == null || e.beta == null) return;
+      // Capture initial orientation as "center"
+      if (baseGamma === null) { baseGamma = e.gamma; baseBeta = e.beta; }
+      const dx = clamp((e.gamma - baseGamma!) / 30, -1, 1) * PARALLAX_RANGE;
+      const dy = clamp((e.beta - baseBeta!) / 30, -1, 1) * PARALLAX_RANGE;
+      // Smooth
+      tiltRef.current.x += (dx - tiltRef.current.x) * SMOOTHING;
+      tiltRef.current.y += (dy - tiltRef.current.y) * SMOOTHING;
+    };
+
+    // iOS 13+ requires permission
+    const doe = DeviceOrientationEvent as any;
+    if (typeof doe.requestPermission === "function") {
+      doe.requestPermission().then((r: string) => {
+        if (r === "granted") window.addEventListener("deviceorientation", handler);
+      }).catch(() => {});
+    } else {
+      window.addEventListener("deviceorientation", handler);
+    }
+
+    return () => window.removeEventListener("deviceorientation", handler);
+  }, []);
 
   useEffect(() => {
     if (Platform.OS !== "web" || !canvasRef.current) return;
@@ -89,7 +123,18 @@ export function MatrixRain({
     const atlasDraw = createAtlasDrawFn(drawFnRef.current);
 
     return runLoop(ctx, width, height, lConfig, ({ elapsed }) => {
-      const effect = sceneRef.current(scrollRef.current, elapsed, width, height);
+      const baseEffect = sceneRef.current(scrollRef.current, elapsed, width, height);
+      const tx = tiltRef.current.x;
+      const ty = tiltRef.current.y;
+
+      // Apply parallax: shift all particle positions by tilt offset
+      const effect = (tx === 0 && ty === 0) ? baseEffect : (
+        (p: any, time: number, w: number, h: number) => {
+          const f = baseEffect(p, time, w, h);
+          return { ...f, x: f.x + tx, y: f.y + ty };
+        }
+      );
+
       const wells = gravityRef.current;
       const gravState = enableGravityRef.current && wells.length > 0
         ? { wells, getOffset: getGravityOffset }
