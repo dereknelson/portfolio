@@ -13,7 +13,6 @@ import {
   ParticleConfig,
   DrawFn,
 } from "./particles";
-import { createMatrixWorker, WorkerHandle } from "./offscreen";
 
 const defaultScene: SceneDirector = () => effects.tunnel;
 
@@ -42,8 +41,6 @@ export function MatrixRain({
 }: MatrixRainProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { width, height } = useWindowDimensions();
-  const workerRef = useRef<WorkerHandle | null>(null);
-
   const internalGravityRef = useRef<GravityWell[]>([]);
   const gravityRef = externalGravityRef ?? internalGravityRef;
   const enableGravityRef = useRef(enableGravity);
@@ -66,25 +63,7 @@ export function MatrixRain({
     // Detect mobile: reduce workload to save battery
     const isMobile = width < 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
 
-    // Try OffscreenCanvas + Worker (production only — StrictMode double-invoke kills it in dev)
-    const worker = !__DEV__ ? createMatrixWorker(canvas, width, height) : null;
-    if (worker) {
-      workerRef.current = worker;
-      const pollInterval = setInterval(() => {
-        worker.postScroll(scrollRef.current);
-        if (enableGravityRef.current) {
-          worker.postGravity(gravityRef.current);
-        }
-      }, 50);
-
-      return () => {
-        clearInterval(pollInterval);
-        worker.cleanup();
-        workerRef.current = null;
-      };
-    }
-
-    // Fallback: main thread rendering with atlas
+    // Main thread rendering with atlas (1.8ms/tick — well within 16ms budget)
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
