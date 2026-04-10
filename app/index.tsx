@@ -18,6 +18,7 @@ import {
   SceneDirector,
   effects,
 } from "./components/matrix";
+import { clamp } from "./components/matrix/helpers";
 
 // =============================================================================
 // Scene Choreography
@@ -381,9 +382,58 @@ export default function Portfolio() {
   const underlineAnim = useAnimatedValue(100);
   const gravityWellsRef = useRef<GravityWell[]>([]);
   const scrollYRef = useRef(0);
+  const tiltRef = useRef({ x: 0, y: 0 });
   const expCardRefs = useRef<(HTMLElement | null)[]>([]);
   const projCardRefs = useRef<(HTMLElement | null)[]>([]);
   const initialMeasureDone = useRef(false);
+  const [gyroEnabled, setGyroEnabled] = useState(false);
+  const [showGyroButton, setShowGyroButton] = useState(false);
+
+  // Detect mobile for gyro button
+  useEffect(() => {
+    if (Platform.OS === "web") {
+      const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+      setShowGyroButton(isMobile);
+
+      // On Android/non-iOS, gyro works without permission — enable automatically
+      const doe = DeviceOrientationEvent as any;
+      if (isMobile && typeof doe.requestPermission !== "function") {
+        enableGyroscope();
+      }
+    }
+  }, []);
+
+  const enableGyroscope = () => {
+    const PARALLAX_RANGE = 80;
+    const SMOOTHING = 0.1;
+    let baseGamma: number | null = null;
+    let baseBeta: number | null = null;
+
+    const handler = (e: DeviceOrientationEvent) => {
+      if (e.gamma == null || e.beta == null) return;
+      if (baseGamma === null) { baseGamma = e.gamma; baseBeta = e.beta; }
+      const dx = clamp((e.gamma - baseGamma!) / 30, -1, 1) * PARALLAX_RANGE;
+      const dy = clamp((e.beta - baseBeta!) / 30, -1, 1) * PARALLAX_RANGE;
+      tiltRef.current.x += (dx - tiltRef.current.x) * SMOOTHING;
+      tiltRef.current.y += (dy - tiltRef.current.y) * SMOOTHING;
+    };
+
+    window.addEventListener("deviceorientation", handler);
+    setGyroEnabled(true);
+    setShowGyroButton(false);
+  };
+
+  const handleGyroPress = () => {
+    const doe = DeviceOrientationEvent as any;
+    if (typeof doe.requestPermission === "function") {
+      doe.requestPermission().then((r: string) => {
+        if (r === "granted") enableGyroscope();
+        else setShowGyroButton(false);
+      }).catch(() => setShowGyroButton(false));
+    } else {
+      enableGyroscope();
+    }
+  };
 
   // Measure gravity wells once after entrance animations settle
   useEffect(() => {
@@ -443,6 +493,7 @@ export default function Portfolio() {
         scene={scene}
         scrollYRef={scrollYRef}
         gravityWellsRef={gravityWellsRef}
+        tiltRef={tiltRef}
         enableGravity={true}
         debug={false}
       />
@@ -517,23 +568,52 @@ export default function Portfolio() {
                 <Text style={styles.email}>derek@rlvnt.io</Text>
               </Pressable>
 
-              <Pressable
-                onPress={() => Linking.openURL("https://github.com/dereknelson")}
-                style={styles.githubLink}
-              >
-                {Platform.OS === "web" ? (
-                  <svg
-                    width="22"
-                    height="22"
-                    viewBox="0 0 24 24"
-                    fill="#94a3b8"
-                  >
-                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
-                  </svg>
-                ) : (
-                  <Text style={styles.githubFallback}>GitHub</Text>
-                )}
-              </Pressable>
+              <View style={styles.socialRow}>
+                <Pressable
+                  onPress={() => Linking.openURL("https://github.com/dereknelson")}
+                  style={styles.socialLink}
+                >
+                  {Platform.OS === "web" ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#94a3b8">
+                      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+                    </svg>
+                  ) : (
+                    <Text style={styles.socialFallback}>GitHub</Text>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  onPress={() => Linking.openURL("https://x.com/prodigynelson")}
+                  style={styles.socialLink}
+                >
+                  {Platform.OS === "web" ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="#94a3b8">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+                    </svg>
+                  ) : (
+                    <Text style={styles.socialFallback}>X</Text>
+                  )}
+                </Pressable>
+
+                <Pressable
+                  onPress={() => Linking.openURL("https://instagram.com/prodigynelson")}
+                  style={styles.socialLink}
+                >
+                  {Platform.OS === "web" ? (
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#94a3b8">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                    </svg>
+                  ) : (
+                    <Text style={styles.socialFallback}>IG</Text>
+                  )}
+                </Pressable>
+              </View>
+
+              {showGyroButton && (
+                <Pressable onPress={handleGyroPress} style={styles.gyroButton}>
+                  <Text style={styles.gyroButtonText}>Enable Parallax Mode</Text>
+                </Pressable>
+              )}
             </Animated.View>
 
           </View>
@@ -647,9 +727,13 @@ const styles = StyleSheet.create({
     color: "#60a5fa",
     marginTop: 4,
   },
-  githubLink: {
+  socialRow: {
+    flexDirection: "row",
+    gap: 12,
     marginTop: 12,
-    padding: 8,
+  },
+  socialLink: {
+    padding: 10,
     borderRadius: 9999,
     borderWidth: 1,
     borderColor: "rgba(80, 80, 80, 0.5)",
@@ -658,9 +742,23 @@ const styles = StyleSheet.create({
       transition: "border-color 0.2s",
     }),
   },
-  githubFallback: {
+  socialFallback: {
     fontSize: 14,
     color: "#94a3b8",
+  },
+  gyroButton: {
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 9999,
+    borderWidth: 1,
+    borderColor: "rgba(96, 165, 250, 0.4)",
+    backgroundColor: "rgba(96, 165, 250, 0.1)",
+  },
+  gyroButtonText: {
+    fontSize: 12,
+    color: "#60a5fa",
+    letterSpacing: 0.5,
   },
   section: {
     marginBottom: 48,

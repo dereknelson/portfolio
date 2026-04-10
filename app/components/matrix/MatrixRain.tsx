@@ -27,6 +27,7 @@ interface MatrixRainProps {
   debug?: boolean;
   scene?: SceneDirector;
   scrollYRef?: React.RefObject<number>;
+  tiltRef?: React.RefObject<{ x: number; y: number }>;
 }
 
 export function MatrixRain({
@@ -39,6 +40,7 @@ export function MatrixRain({
   debug = false,
   scene,
   scrollYRef: externalScrollRef,
+  tiltRef: externalTiltRef,
 }: MatrixRainProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { width, height } = useWindowDimensions();
@@ -56,39 +58,8 @@ export function MatrixRain({
   drawFnRef.current = drawFn;
   const debugRef = useRef(debug);
   debugRef.current = debug;
-  const tiltRef = useRef({ x: 0, y: 0 });
-
-  // Gyroscope parallax — shift tunnel center based on device tilt
-  useEffect(() => {
-    if (Platform.OS !== "web") return;
-    const PARALLAX_RANGE = 80; // max px offset
-    const SMOOTHING = 0.1;
-    let baseGamma: number | null = null;
-    let baseBeta: number | null = null;
-
-    const handler = (e: DeviceOrientationEvent) => {
-      if (e.gamma == null || e.beta == null) return;
-      // Capture initial orientation as "center"
-      if (baseGamma === null) { baseGamma = e.gamma; baseBeta = e.beta; }
-      const dx = clamp((e.gamma - baseGamma!) / 30, -1, 1) * PARALLAX_RANGE;
-      const dy = clamp((e.beta - baseBeta!) / 30, -1, 1) * PARALLAX_RANGE;
-      // Smooth
-      tiltRef.current.x += (dx - tiltRef.current.x) * SMOOTHING;
-      tiltRef.current.y += (dy - tiltRef.current.y) * SMOOTHING;
-    };
-
-    // iOS 13+ requires permission
-    const doe = DeviceOrientationEvent as any;
-    if (typeof doe.requestPermission === "function") {
-      doe.requestPermission().then((r: string) => {
-        if (r === "granted") window.addEventListener("deviceorientation", handler);
-      }).catch(() => {});
-    } else {
-      window.addEventListener("deviceorientation", handler);
-    }
-
-    return () => window.removeEventListener("deviceorientation", handler);
-  }, []);
+  const internalTiltRef = useRef({ x: 0, y: 0 });
+  const tiltRef = externalTiltRef ?? internalTiltRef;
 
   useEffect(() => {
     if (Platform.OS !== "web" || !canvasRef.current) return;
