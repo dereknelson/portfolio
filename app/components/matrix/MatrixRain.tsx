@@ -81,7 +81,9 @@ export function MatrixRain({
       ...(isMobile && { adaptiveFps: true }), // drop to 30fps if device is struggling
     };
     const numCols = Math.ceil(width / pConfig.cellSize);
-    const numParticles = Math.max(numCols * 4, 200);
+    const numParticles = isMobile
+      ? Math.max(numCols * 4, 200)
+      : Math.max(numCols * 6, 300);
     const pool = createParticlePool(numCols, numParticles, pConfig);
     const getGravityOffset = createGravityCalculator(gravConfigRef.current);
     const atlasDraw = createAtlasDrawFn(drawFnRef.current);
@@ -111,7 +113,10 @@ export function MatrixRain({
     <View style={styles.container} pointerEvents="none">
       <canvas
         ref={canvasRef as any}
-        style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
+        style={{
+          position: "absolute", top: 0, left: 0, width: "100%", height: "100%",
+          willChange: "transform",
+        }}
       />
     </View>
   );

@@ -68,10 +68,22 @@ export function renderParticles(
   const { particles, charBuffers, lastCharTick } = pool;
   const { trailLength, charTickRate } = config;
 
+  // Trail reach: how far the last trail segment extends from the head
+  const maxTrailReach = trailLength * Math.max(
+    Math.abs(20), // rough upper bound on trailDx/trailDy
+    30,
+  );
+
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
     const frame = effect(p, elapsed, width, height);
     if (frame.brightness <= 0) continue;
+
+    // Early cull: skip entire particle if head is far offscreen
+    if (
+      frame.x < -maxTrailReach || frame.x > width + maxTrailReach ||
+      frame.y < -maxTrailReach || frame.y > height + maxTrailReach
+    ) continue;
 
     const charTick = Math.floor(elapsed * p.speed * charTickRate);
     if (charTick !== lastCharTick[i]) {
@@ -84,7 +96,8 @@ export function renderParticles(
     for (let t = trailLength - 1; t >= 0; t--) {
       const sx = frame.x + frame.trailDx * t;
       const sy = frame.y + frame.trailDy * t;
-      if (sx < -40 || sx > width + 40 || sy < -40 || sy > height + 40) continue;
+      // Tight viewport cull — don't draw anything offscreen
+      if (sx < 0 || sx > width || sy < 0 || sy > height) continue;
 
       const sSize = Math.max(4, frame.size + frame.trailSizeDelta * t);
       let sBright = frame.brightness * (1 - t / trailLength);
