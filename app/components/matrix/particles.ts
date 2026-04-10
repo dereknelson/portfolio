@@ -88,6 +88,7 @@ export function renderParticles(
 
       const sSize = Math.max(4, frame.size + frame.trailSizeDelta * t);
       let sBright = frame.brightness * (1 - t / trailLength);
+      if (sBright < 0.05) continue;
 
       if (gravity) {
         const grav = gravity.getOffset(sx, sy, gravity.wells);

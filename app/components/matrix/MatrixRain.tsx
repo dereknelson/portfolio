@@ -4,6 +4,7 @@ import { SceneDirector, GravityWell, GravityConfig } from "./types";
 import { effects } from "./effects";
 import { createGravityCalculator, DEFAULT_GRAVITY_CONFIG } from "./gravity";
 import { drawCharGreen } from "./drawing";
+import { createAtlasDrawFn } from "./atlas";
 import { runLoop, DEFAULT_LOOP_CONFIG, LoopConfig } from "./loop";
 import {
   createParticlePool,
@@ -12,6 +13,7 @@ import {
   ParticleConfig,
   DrawFn,
 } from "./particles";
+import { createMatrixWorker, WorkerHandle } from "./offscreen";
 
 const defaultScene: SceneDirector = () => effects.tunnel;
 
@@ -40,6 +42,7 @@ export function MatrixRain({
 }: MatrixRainProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const { width, height } = useWindowDimensions();
+  const workerRef = useRef<WorkerHandle | null>(null);
 
   const internalGravityRef = useRef<GravityWell[]>([]);
   const gravityRef = externalGravityRef ?? internalGravityRef;
@@ -58,20 +61,52 @@ export function MatrixRain({
 
   useEffect(() => {
     if (Platform.OS !== "web" || !canvasRef.current) return;
-
     const canvas = canvasRef.current;
+
+    // Detect mobile: reduce workload to save battery
+    const isMobile = width < 768 || /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent);
+
+    // Try OffscreenCanvas + Worker (production only — StrictMode double-invoke kills it in dev)
+    const worker = !__DEV__ ? createMatrixWorker(canvas, width, height) : null;
+    if (worker) {
+      workerRef.current = worker;
+      console.log("[matrix] running in Web Worker (off main thread)");
+
+      const pollInterval = setInterval(() => {
+        worker.postScroll(scrollRef.current);
+        if (enableGravityRef.current) {
+          worker.postGravity(gravityRef.current);
+        }
+      }, 50);
+
+      return () => {
+        clearInterval(pollInterval);
+        worker.cleanup();
+        workerRef.current = null;
+      };
+    }
+
+    // Fallback: main thread rendering with atlas
+    console.log(`[matrix] main thread, mobile: ${isMobile}`);
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 
     canvas.width = width;
     canvas.height = height;
 
-    const pConfig = { ...DEFAULT_PARTICLE_CONFIG, ...particleConfig };
+    const pConfig = {
+      ...DEFAULT_PARTICLE_CONFIG,
+      ...particleConfig,
+      ...(isMobile && { trailLength: 8 }),
+    };
     const lConfig = { ...DEFAULT_LOOP_CONFIG, ...loopConfig };
     const numCols = Math.ceil(width / pConfig.cellSize);
-    const numParticles = Math.max(numCols * 4, 200);
+    const numParticles = isMobile
+      ? Math.max(numCols * 2, 80)
+      : Math.max(numCols * 4, 200);
     const pool = createParticlePool(numCols, numParticles, pConfig);
     const getGravityOffset = createGravityCalculator(gravConfigRef.current);
+    const atlasDraw = createAtlasDrawFn(drawFnRef.current);
 
     return runLoop(ctx, width, height, lConfig, ({ elapsed }) => {
       const effect = sceneRef.current(scrollRef.current, elapsed, width, height);
@@ -80,7 +115,7 @@ export function MatrixRain({
         ? { wells, getOffset: getGravityOffset }
         : null;
 
-      renderParticles(ctx, pool, pConfig, effect, elapsed, width, height, drawFnRef.current, gravState);
+      renderParticles(ctx, pool, pConfig, effect, elapsed, width, height, atlasDraw, gravState);
 
       if (debugRef.current && wells.length > 0) {
         for (const well of wells) {
