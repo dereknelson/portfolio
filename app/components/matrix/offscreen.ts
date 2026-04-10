@@ -34,18 +34,7 @@ export function createMatrixWorker(
   const url = URL.createObjectURL(blob);
   const worker = new Worker(url);
 
-  worker.onerror = (e) => {
-    console.warn("[matrix worker] error:", e.message);
-  };
-
-  worker.onmessage = (e) => {
-    if (e.data.type === "perf") {
-      console.log(
-        `[matrix worker] avg tick: ${e.data.avgMs.toFixed(2)}ms ` +
-        `(${e.data.fps} theoretical fps)`,
-      );
-    }
-  };
+  worker.onerror = () => {};
 
   worker.postMessage(
     { type: "init", canvas: offscreen, width, height },
@@ -251,10 +240,6 @@ function workerMain() {
     const blit = createAtlas();
     const getGravBrightness = createGravityCalc(GRAV_RADIUS);
 
-    // Perf tracking
-    const frameTimes = new Float64Array(120);
-    let frameIdx = 0;
-
     let lastTime = performance.now();
     const startTime = lastTime;
 
@@ -276,7 +261,7 @@ function workerMain() {
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
 
-      const tickStart = performance.now();
+
 
       for (let i = 0; i < numParticles; i++) {
         const frame = tunnelEffect(angles[i], speeds[i], phases[i], elapsed, width, height);
@@ -305,18 +290,6 @@ function workerMain() {
 
           blit(ctx as any, sx, sy, charBuffers[i][t], sSize, sBright);
         }
-      }
-
-      const tickMs = performance.now() - tickStart;
-      frameTimes[frameIdx % 120] = tickMs;
-      frameIdx++;
-      if (frameIdx % 120 === 0) {
-        const avg = frameTimes.reduce((a, b) => a + b, 0) / 120;
-        (self as any).postMessage({
-          type: "perf",
-          avgMs: avg,
-          fps: Math.round(1000 / (avg + 1)),
-        });
       }
 
       ctx.globalAlpha = 1;

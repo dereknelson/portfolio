@@ -70,8 +70,6 @@ export function MatrixRain({
     const worker = !__DEV__ ? createMatrixWorker(canvas, width, height) : null;
     if (worker) {
       workerRef.current = worker;
-      console.log("[matrix] running in Web Worker (off main thread)");
-
       const pollInterval = setInterval(() => {
         worker.postScroll(scrollRef.current);
         if (enableGravityRef.current) {
@@ -87,7 +85,6 @@ export function MatrixRain({
     }
 
     // Fallback: main thread rendering with atlas
-    console.log(`[matrix] main thread, mobile: ${isMobile}`);
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) return;
 

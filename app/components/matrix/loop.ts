@@ -30,8 +30,6 @@ export function runLoop(
   let animId: number;
   let lastTime = performance.now();
   const startTime = lastTime;
-  const frameTimes = new Float64Array(120);
-  let frameIdx = 0;
 
   const loop = () => {
     animId = requestAnimationFrame(loop);
@@ -51,17 +49,7 @@ export function runLoop(
     ctx.textBaseline = "middle";
     ctx.textAlign = "center";
 
-    const tickStart = performance.now();
     onTick({ elapsed, dt, fade });
-    const tickMs = performance.now() - tickStart;
-
-    // Log average frame time every 120 frames (~2s)
-    frameTimes[frameIdx % 120] = tickMs;
-    frameIdx++;
-    if (frameIdx % 120 === 0) {
-      const avg = frameTimes.reduce((a, b) => a + b, 0) / 120;
-      console.log(`[matrix] avg tick: ${avg.toFixed(2)}ms (${(1000 / (avg + 1)).toFixed(0)} theoretical fps)`);
-    }
 
     ctx.globalAlpha = 1;
   };
