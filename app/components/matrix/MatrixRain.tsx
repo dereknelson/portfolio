@@ -73,13 +73,15 @@ export function MatrixRain({
     const pConfig = {
       ...DEFAULT_PARTICLE_CONFIG,
       ...particleConfig,
-      ...(isMobile && { trailLength: 8 }),
+      ...(isMobile && { trailLength: 12 }),
     };
-    const lConfig = { ...DEFAULT_LOOP_CONFIG, ...loopConfig };
+    const lConfig = {
+      ...DEFAULT_LOOP_CONFIG,
+      ...loopConfig,
+      ...(isMobile && { adaptiveFps: true }), // drop to 30fps if device is struggling
+    };
     const numCols = Math.ceil(width / pConfig.cellSize);
-    const numParticles = isMobile
-      ? Math.max(numCols * 2, 80)
-      : Math.max(numCols * 4, 200);
+    const numParticles = Math.max(numCols * 4, 200);
     const pool = createParticlePool(numCols, numParticles, pConfig);
     const getGravityOffset = createGravityCalculator(gravConfigRef.current);
     const atlasDraw = createAtlasDrawFn(drawFnRef.current);
