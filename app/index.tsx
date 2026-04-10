@@ -682,6 +682,7 @@ const styles = StyleSheet.create({
   skillsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
+    justifyContent: "center",
     gap: 12,
   },
   skillBadge: {

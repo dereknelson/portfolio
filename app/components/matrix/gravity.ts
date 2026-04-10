@@ -50,11 +50,8 @@ export function createGravityCalculator(config: GravityConfig) {
         dy += flow * flow * surfaceFlowStrength * well.strength;
       }
 
-      // Only boost brightness very close to surface — prevents bright stripe in gaps
-      if (proximity > 0.7) {
-        const glow = (proximity - 0.7) / 0.3;
-        brightness = Math.max(brightness, glow * glow * 0.6 * well.strength);
-      }
+      // Glow: particles brighten as they approach card surfaces
+      brightness = Math.max(brightness, proximity * proximity * 0.3 * well.strength);
     }
 
     const offsetDist = Math.sqrt(dx * dx + dy * dy);

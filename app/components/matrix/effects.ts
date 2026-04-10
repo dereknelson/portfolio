@@ -19,7 +19,7 @@ const tunnelEffect: Effect = (p, time, w, h) => {
   return {
     x, y,
     size: 6 + 18 * clamp(depth, 0, 1),
-    brightness: clamp(0.6 + depth * 0.4, 0, 1),
+    brightness: 0.85,
     trailDx: -Math.cos(p.angle) * trailStep,
     trailDy: -Math.sin(p.angle) * trailStep,
     trailSizeDelta: -0.6,
