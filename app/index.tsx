@@ -611,7 +611,7 @@ export default function Portfolio() {
 
               {showGyroButton && (
                 <Pressable onPress={handleGyroPress} style={styles.gyroButton}>
-                  <Text style={styles.gyroButtonText}>Enable Parallax Mode</Text>
+                  <Text style={styles.gyroButtonText}>Enter the Matrix</Text>
                 </Pressable>
               )}
             </Animated.View>
