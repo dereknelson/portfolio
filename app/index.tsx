@@ -401,11 +401,16 @@ export default function Portfolio() {
   const underlineAnim = useAnimatedValue(300);
   const [gravityWells, setGravityWells] = useState<GravityWell[]>([]);
   const [scrollPosition, setScrollPosition] = useState(0);
-  const [viewportSize, setViewportSize] = useState({ width: 800, height: 600 });
+  const [viewportSize, setViewportSize] = useState({ width: windowWidth, height: windowHeight });
   const experienceCardLayouts = useRef<{ y: number; height: number; width: number }[]>([]);
   const scrollViewRef = useRef<ScrollView>(null);
   const hasInitializedRef = useRef(false);
   const currentScrollY = useRef(0);
+
+  // Keep viewport size in sync with window dimensions on mount/resize
+  useEffect(() => {
+    setViewportSize({ width: windowWidth, height: windowHeight });
+  }, [windowWidth, windowHeight]);
 
 
 
@@ -414,24 +419,31 @@ export default function Portfolio() {
   const handleCardMeasure = (index: number, screenY: number, height: number, width: number) => {
     // Convert screen Y to content Y by adding current scroll position
     const contentY = screenY + currentScrollY.current;
-    console.log(`Card ${index}: screenY=${screenY}, scrollY=${currentScrollY.current}, contentY=${contentY}`);
     experienceCardLayouts.current[index] = { y: contentY, height, width };
 
-    // Create initial gravity well for the first visible card
-    if (index === 0 && !hasInitializedRef.current) {
-      hasInitializedRef.current = true;
-      const contentWidth = Math.min(viewportSize.width, 800);
-      const cardWidth = width || contentWidth - 48;
-      const cardX = viewportSize.width / 2 - cardWidth / 2;
+    // Rebuild gravity wells from all measured cards
+    const vw = viewportSize.width || windowWidth;
+    const vh = viewportSize.height || windowHeight;
+    const scrollY = currentScrollY.current;
+    const newGravityWells: GravityWell[] = [];
 
-      // Use screen Y directly for initial gravity well (scroll is ~0 at init)
-      setGravityWells([{
-        x: cardX,
-        y: screenY,
-        width: cardWidth,
-        height,
-        strength: 1,
-      }]);
+    experienceCardLayouts.current.forEach((cardData) => {
+      if (!cardData) return;
+      const cardScreenY = cardData.y - scrollY;
+      if (cardScreenY + cardData.height < -100 || cardScreenY > vh + 100) return;
+      const cardWidth = cardData.width || Math.min(vw, 800) - 48;
+      const pad = 20;
+      newGravityWells.push({
+        x: vw / 2 - cardWidth / 2 - pad,
+        y: cardScreenY - pad,
+        width: cardWidth + pad * 2,
+        height: cardData.height + pad * 2,
+        strength: 1.2,
+      });
+    });
+
+    if (newGravityWells.length > 0) {
+      setGravityWells(newGravityWells);
     }
   };
 

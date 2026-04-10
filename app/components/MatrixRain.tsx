@@ -103,6 +103,55 @@ const tunnelEffect: Effect = (p, time, w, h) => {
 };
 
 /**
+ * Globe — particles arranged on a spinning sphere surface.
+ * Uses particle angle + phase to map to (theta, phi) on the sphere.
+ */
+const globeEffect: Effect = (p, time, w, h) => {
+  const cx = w / 2, cy = h / 2;
+  const radius = Math.min(w, h) * 0.28;
+
+  // Map particle identity to sphere surface coordinates
+  const theta = p.angle; // longitude (0..2π)
+  const phi = p.phase * Math.PI; // latitude (0..π)
+
+  // Sphere point
+  const sx = Math.sin(phi) * Math.cos(theta);
+  const sy = Math.cos(phi);
+  const sz = Math.sin(phi) * Math.sin(theta);
+
+  // Rotate around Y axis over time
+  const rotSpeed = 0.5;
+  const cosR = Math.cos(time * rotSpeed);
+  const sinR = Math.sin(time * rotSpeed);
+  const rx = sx * cosR + sz * sinR;
+  const ry = sy;
+  const rz = -sx * sinR + sz * cosR;
+
+  // Hide back-facing
+  if (rz > 0.15) return ZERO_FRAME;
+
+  // Project to screen
+  const x = cx + rx * radius;
+  const y = cy + ry * radius * 0.9;
+
+  // Brightness based on facing direction (front = bright)
+  const brightness = clamp(-rz * 1.3, 0, 1) * 0.9;
+
+  // Short trails pointing away from center
+  const dirX = rx * 3;
+  const dirY = ry * 3;
+
+  return {
+    x, y,
+    size: 10 + 6 * clamp(-rz, 0, 1),
+    brightness,
+    trailDx: dirX,
+    trailDy: dirY,
+    trailSizeDelta: -0.3,
+  };
+};
+
+/**
  * Rain — classic vertical falling columns.
  * Only particles with a column assignment (col >= 0) are visible.
  */
@@ -220,6 +269,7 @@ const convergeEffect: Effect = (p, time, w, h) => {
 
 export const effects = {
   tunnel: tunnelEffect,
+  globe: globeEffect,
   rain: rainEffect,
   spiral: spiralEffect,
   cascade: cascadeEffect,
@@ -350,19 +400,19 @@ function drawChar(
   const alpha = clamp(brightness, 0, 1);
 
   if (brightness > 0.9) {
-    ctx.shadowColor = "#0f0";
+    ctx.shadowColor = "rgb(96, 165, 250)";
     ctx.shadowBlur = 8;
     ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
   } else if (brightness > 0.6) {
-    ctx.shadowColor = "#0f0";
+    ctx.shadowColor = "rgb(96, 165, 250)";
     ctx.shadowBlur = 4;
-    ctx.fillStyle = `rgba(170, 255, 170, ${alpha})`;
+    ctx.fillStyle = `rgba(147, 197, 253, ${alpha})`;
   } else if (brightness > 0.3) {
     ctx.shadowBlur = 2;
-    ctx.fillStyle = `rgba(0, ${Math.floor(100 + brightness * 155)}, 0, ${alpha})`;
+    ctx.fillStyle = `rgba(${Math.floor(30 + brightness * 66)}, ${Math.floor(80 + brightness * 85)}, ${Math.floor(150 + brightness * 100)}, ${alpha})`;
   } else {
     ctx.shadowBlur = 0;
-    ctx.fillStyle = `rgba(0, ${Math.floor(50 + brightness * 100)}, 0, ${alpha})`;
+    ctx.fillStyle = `rgba(${Math.floor(20 + brightness * 50)}, ${Math.floor(40 + brightness * 80)}, ${Math.floor(100 + brightness * 100)}, ${alpha})`;
   }
 
   ctx.font = `bold ${Math.round(size)}px monospace`;
@@ -438,7 +488,7 @@ export function MatrixRain({
       particles.push({
         index: i,
         angle: (i / numParticles) * Math.PI * 2,
-        col: i < numCols ? i : -1,
+        col: i < numCols * 3 ? i % numCols : -1,
         speed: 0.7 + Math.random() * 0.6,
         phase: Math.random(),
       });
